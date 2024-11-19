@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Scores</title>
+    <link rel="stylesheet" href="/css/quizScoresPage.css">
+</head>
+<body>
+<h1>Quiz Scores</h1>
+<table>
+    <thead>
+    <tr>
+        <th>Quiz Name</th>
+        <th>Total Players</th>
+        <th>Average Score</th>
+        <th>Likes</th>
+        <th>Player Name</th>
+        <th>Completed Date</th>
+        <th>Player's Score</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="score : ${scores}">
+        <td th:text="${score.quizName}"></td>
+        <td th:text="${score.totalPlayers}"></td>
+        <td th:text="${score.averageScore}"></td>
+        <td th:text="${score.likes}"></td>
+        <td th:text="${score.playerName}"></td>
+        <td th:text="${score.completedDate}"></td>
+        <td th:text="${score.playerScore}"></td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

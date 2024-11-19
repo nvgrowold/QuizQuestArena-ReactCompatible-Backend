@@ -16,6 +16,7 @@ public class PlayerUserService {
 
     //register new user method
     public PlayerUser registerPlayerUer(String username, String password, String email){
+        // Validate that username and password are not null
         if (username != null && password != null){
             PlayerUser playerUser = new PlayerUser(); //if login and password not null, create a new PlayerUser model
             playerUser.setUsername(username);
@@ -29,14 +30,17 @@ public class PlayerUserService {
 
     //authentication method
     public PlayerUser authentication(String username, String password){
+        // Search the database for a user with the given username and password
         //if found the user in database return it, or else return null
         return playerUserRepo.findByUsernameAndPassword(username,password).orElse(null);
     }
 
     //update user profile
     public PlayerUser updateUserProfile(PlayerUserDTO playerUserDTO) {
+        // Retrieve the user from the database by ID
         Optional<PlayerUser> existingUser = playerUserRepo.findById(playerUserDTO.getId());
         if (existingUser.isPresent()) {
+            // If user exists, update the editable fields
             PlayerUser user = existingUser.get();
             user.setFirstName(playerUserDTO.getFirstName());
             user.setLastName(playerUserDTO.getLastName());
@@ -44,8 +48,10 @@ public class PlayerUserService {
             user.setPhoneNumber(playerUserDTO.getPhoneNumber());
             user.setAddress(playerUserDTO.getAddress());
             user.setRole(playerUserDTO.getRole());
+            // Save the updated user to the database and return the updated entity
             return playerUserRepo.save(user);
         }
+        // If the user is not found, throw an exception
         throw new RuntimeException("User not found");
     }
 }
