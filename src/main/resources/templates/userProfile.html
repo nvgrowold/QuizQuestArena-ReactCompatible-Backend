@@ -8,7 +8,10 @@
 <body>
 
 <div class="form">
-<form action="/updateProfile" method="post">
+  <form th:action="@{/updateProfile/{id}(id=${playerUser.id})}" method="post">
+
+  <input type="hidden" name="id" th:value="${playerUser.id}">
+
   <h1>User Profile</h1>
   <label>User ID:</label>
   <input type="text" name="id" th:value="${playerUser.id}" disabled><br>
@@ -34,14 +37,12 @@
   <label>Role:</label>
   <input type="text" name="role" th:value="${playerUser.role}" disabled><br>
 
-  <input type="submit" value="Save">
+  <input type="submit" value="Save"><br>
+  <div>
+    <a href="/logout" class="logout-button">Logout</a>
+  </div><br>
 </form>
-
-<!-- Display success or error messages -->
-<p th:if="${successMessage}" style="color: green;" th:text="${successMessage}"></p>
-<p th:if="${errorMessage}" style="color: red;" th:text="${errorMessage}"></p>
-
-<a href="/">Back to Home</a>
 </div>
+
 </body>
 </html>

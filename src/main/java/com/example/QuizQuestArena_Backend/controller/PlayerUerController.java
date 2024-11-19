@@ -9,11 +9,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.servlet.http.HttpSession; // Import for HttpSession
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -98,7 +96,7 @@ public class PlayerUerController {
 
     //handle login requests
     @PostMapping("/login")
-    public String loginPlayer(@ModelAttribute PlayerUserDTO playerUserDTO, Model model) {
+    public String loginPlayer(@ModelAttribute PlayerUserDTO playerUserDTO, Model model,  HttpSession session) {
         System.out.println("Attempting login for username: " + playerUserDTO.getUsername());
 
         //search and compare in the database for the username and password
@@ -109,7 +107,9 @@ public class PlayerUerController {
            // model.addAttribute("successMessage", "Login Successful!"); // Add success message
             model.addAttribute("playerUser", authenticatedUser.get()); // Pass the user data to the profile page
             System.out.println("Login successful for user: " + playerUserDTO.getUsername());
-            return "redirect:/userProfile?userId=" + authenticatedUser.get().getId(); // Pass userId in the redirect
+            session.setAttribute("userId", authenticatedUser.get().getId()); // Store userId in session
+            return "redirect:/userProfile"; // User ID is stored in session
+            //return "redirect:/userProfile?userId=" + authenticatedUser.get().getId(); // Pass userId in the redirect
         } else {
             model.addAttribute("errorMessage", "Invalid login or password!");
             System.out.println("Login failed for user: " + playerUserDTO.getUsername());
@@ -153,7 +153,10 @@ public class PlayerUerController {
     //update user profile function____________________________________________
     // Display user profile
     @GetMapping("/userProfile")
-    public String getUserProfile(@RequestParam("userId") Long userId, Model model) {
+    public String getUserProfile(HttpSession session, Model model) {
+        Long userId = (Long) session.getAttribute("userId"); //get user id during valid session
+        System.out.println("Retrieved userId from session: " + userId);
+
         //search user by id in the database
         Optional<PlayerUser> user = playerUserRepo.findById(userId);
         if (user.isPresent()) {
@@ -166,8 +169,8 @@ public class PlayerUerController {
     }
 
     // Update user profile
-    @PostMapping("/updateProfile")
-    public String updateUserProfile(@ModelAttribute PlayerUserDTO playerUserDTO, Model model) {
+    @PostMapping("/updateProfile/{id}")
+    public String updateUserProfile(@PathVariable("id") Long id, @ModelAttribute PlayerUserDTO playerUserDTO, Model model) {
         Optional<PlayerUser> existingUser = playerUserRepo.findById(playerUserDTO.getId());
         if (existingUser.isPresent()) {
             PlayerUser user = existingUser.get();
@@ -182,10 +185,22 @@ public class PlayerUerController {
             playerUserRepo.save(user); // Save updated user
             model.addAttribute("successMessage", "Profile updated successfully!");
             model.addAttribute("playerUser", user);
-            return "userProfile";
+            // Redirect to the user's profile page with their userId
+            return "redirect:/userProfile?userId=" + user.getId();
         } else {
             model.addAttribute("errorMessage", "User not found!");
             return "error_page";
         }
     }
+
+    //logout from userprofile page
+    @GetMapping("/logout")
+    public String logoutUser(HttpSession session) {
+        // Invalidate session or perform logout logic here
+        if (session != null) {
+            session.invalidate(); // Invalidate the user's session
+        }
+        return "redirect:/"; // Redirect to the home page
+    }
+
 }
