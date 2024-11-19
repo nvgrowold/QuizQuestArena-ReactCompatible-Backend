@@ -3,10 +3,11 @@ package com.example.QuizQuestArena_Backend.controller;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
 import com.example.QuizQuestArena_Backend.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
 
 import java.util.List;
 
@@ -14,11 +15,13 @@ import java.util.List;
  * Controller class for managing quiz-related endpoints.
  * Handles incoming HTTP requests related to quizzes and delegates to QuizService.
  */
-@RestController
+@Controller// Use @Controller to enable HTML view rendering, don't use @RestController
 public class QuizController {
 
     @Autowired
     private QuizService quizService;
+
+    LocalDateTime completedDate = LocalDateTime.now(); // Get the current date and time
 
     /**
      * Endpoint to fetch quiz scores for each tournament.
@@ -38,7 +41,13 @@ public class QuizController {
 
     @GetMapping("/quizScoresPage")
     public String getQuizScoresPage(Model model) {
-        // Fetch scores from the service layer
+
+//        // Temporary mock data
+//        List<QuizScoreDTO> scores = List.of(
+//                new QuizScoreDTO("Quiz 1", 10, 75.5, 25, "JohnDoe",  LocalDateTime.now(),  85),
+//                new QuizScoreDTO("Quiz 2", 5, 65.3, 10, "JaneDoe",  LocalDateTime.now(),  70)
+//        );
+//        // Fetch scores from the service layer
         List<QuizScoreDTO> scores = quizService.getQuizScores();
 
         // Add scores to the model so they can be accessed in the Thymeleaf template

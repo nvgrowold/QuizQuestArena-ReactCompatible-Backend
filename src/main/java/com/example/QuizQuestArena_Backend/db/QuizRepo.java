@@ -17,10 +17,12 @@ public interface QuizRepo extends CrudRepository<Quiz, Long> {
      * returning a list of QuizScoreDTO objects with sorted player scores in descending order.
      */
     @Query("SELECT new com.example.QuizQuestArena_Backend.dto.QuizScoreDTO(" +
+            "q.id, " +                  // Quiz ID
             "q.name, " +                // The name of the quiz
-            "COUNT(s.player.id), " +    // Total number of players who participated
+            "COUNT(p.id), " +    // Total number of players who participated
             "AVG(s.score), " +          // Average score for the quiz
             "q.likes, " +               // Number of likes the quiz received
+            "p.id, " +                  // Player ID
             "p.username, " +            // Username of the player
             "s.completedDate, " +       // The date the player completed the quiz
             "s.score) " +               // The player's score
