@@ -93,3 +93,19 @@ body::before {
 .form a:hover {
   color: #ff4987;
 }
+
+.links {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.links a {
+    margin: 0 10px;
+    text-decoration: none;
+    color: #007BFF;
+}
+
+.links a:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}

@@ -76,6 +76,18 @@
 			<scope>provided</scope>
 		</dependency>
 
+		<!--For	email notification-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+			<version>3.3.5</version> <!-- Replace with your Spring Boot version -->
+		</dependency>
+
+<!--		for reset password handle sending email encryp password-->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
 
 	</dependencies>
 
