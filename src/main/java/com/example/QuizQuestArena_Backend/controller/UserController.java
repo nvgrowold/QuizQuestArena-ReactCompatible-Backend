@@ -1,10 +1,9 @@
 package com.example.QuizQuestArena_Backend.controller;
 
-import com.example.QuizQuestArena_Backend.db.PlayerUserRepo;
-import com.example.QuizQuestArena_Backend.dto.PlayerUserDTO;
+import com.example.QuizQuestArena_Backend.db.UserRepo;
+import com.example.QuizQuestArena_Backend.dto.UserDTO;
 import com.example.QuizQuestArena_Backend.model.PlayerUser;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -19,10 +18,10 @@ import java.nio.file.Paths;
 import java.util.Optional;
 
 @Controller
-public class PlayerUerController {
+public class UserController {
 
     @Autowired
-    private PlayerUserRepo playerUserRepo;
+    private UserRepo userRepo;
 
     //methods to redirect user to a specfic page after success logged in
     //register page
@@ -34,7 +33,7 @@ public class PlayerUerController {
 
     // Handle registration
     @PostMapping("/register")
-    public String registerPlayer(@Validated @ModelAttribute PlayerUserDTO playerUserDTO,
+    public String registerPlayer(@Validated @ModelAttribute UserDTO userDTO,
                                  BindingResult result, Model model) {
 
         // Check for validation errors
@@ -45,7 +44,7 @@ public class PlayerUerController {
 
         try {
             // Check if username already exists
-            Optional<PlayerUser> existingUser = playerUserRepo.findByUsername(playerUserDTO.getUsername());
+            Optional<PlayerUser> existingUser = userRepo.findByUsername(userDTO.getUsername());
             if (existingUser.isPresent()) {
                 model.addAttribute("errorMessage", "User with the same username already exists!");
                 return "register_page";
@@ -53,14 +52,14 @@ public class PlayerUerController {
 
             // Handle profile picture if provided
             String profilePictureUrl = null;
-            if (playerUserDTO.getProfilePicture() != null && !playerUserDTO.getProfilePicture().isEmpty()) {
-                profilePictureUrl = saveProfilePicture(playerUserDTO.getProfilePicture());
+            if (userDTO.getProfilePicture() != null && !userDTO.getProfilePicture().isEmpty()) {
+                profilePictureUrl = saveProfilePicture(userDTO.getProfilePicture());
             }
 
             // Map DTO to entity and save
-            PlayerUser playerUser = mapToEntity(playerUserDTO);
+            PlayerUser playerUser = mapToEntity(userDTO);
             playerUser.setProfilePicture(profilePictureUrl); // Set the URL or leave null
-            playerUserRepo.save(playerUser);
+            userRepo.save(playerUser);
 
             model.addAttribute("successMessage", "Registration successful! Please log in.");
             return "login_page";
@@ -96,29 +95,29 @@ public class PlayerUerController {
 
     //handle login requests
     @PostMapping("/login")
-    public String loginPlayer(@ModelAttribute PlayerUserDTO playerUserDTO, Model model,  HttpSession session) {
-        System.out.println("Attempting login for username: " + playerUserDTO.getUsername());
+    public String loginPlayer(@ModelAttribute UserDTO userDTO, Model model, HttpSession session) {
+        System.out.println("Attempting login for username: " + userDTO.getUsername());
 
         //search and compare in the database for the username and password
-        Optional<PlayerUser> authenticatedUser = playerUserRepo.findByUsernameAndPassword(
-                playerUserDTO.getUsername(), playerUserDTO.getPassword());
+        Optional<PlayerUser> authenticatedUser = userRepo.findByUsernameAndPassword(
+                userDTO.getUsername(), userDTO.getPassword());
 
         if (authenticatedUser.isPresent()) {
            // model.addAttribute("successMessage", "Login Successful!"); // Add success message
             model.addAttribute("playerUser", authenticatedUser.get()); // Pass the user data to the profile page
-            System.out.println("Login successful for user: " + playerUserDTO.getUsername());
+            System.out.println("Login successful for user: " + userDTO.getUsername());
             session.setAttribute("userId", authenticatedUser.get().getId()); // Store userId in session
             return "redirect:/userProfile"; // User ID is stored in session
             //return "redirect:/userProfile?userId=" + authenticatedUser.get().getId(); // Pass userId in the redirect
         } else {
             model.addAttribute("errorMessage", "Invalid login or password!");
-            System.out.println("Login failed for user: " + playerUserDTO.getUsername());
+            System.out.println("Login failed for user: " + userDTO.getUsername());
             return "login_page";
         }
     }
 
     // Utility: Map DTO to Entity. The input DTO is converted into an entity for saving to the database
-    private PlayerUser mapToEntity(PlayerUserDTO dto) {
+    private PlayerUser mapToEntity(UserDTO dto) {
         return new PlayerUser(
                 null, // ID will be auto-generated
                 dto.getUsername(),
@@ -136,8 +135,8 @@ public class PlayerUerController {
 
 
     // Utility: Map Entity to DTO. The output DTO is constructed from the entity after retrieval from the database
-    private PlayerUserDTO mapToDTO(PlayerUser entity) {
-        return new PlayerUserDTO(
+    private UserDTO mapToDTO(PlayerUser entity) {
+        return new UserDTO(
                 entity.getId(),               // ID
                 entity.getUsername(),         // Username
                 entity.getFirstName(),        // First name
@@ -156,33 +155,41 @@ public class PlayerUerController {
     public String getUserProfile(HttpSession session, Model model) {
         Long userId = (Long) session.getAttribute("userId"); //get user id during valid session
         System.out.println("Retrieved userId from session: " + userId);
+        if (userId == null) {
+            return "redirect:/login"; // Redirect to login if no session
+        }
 
         //search user by id in the database
-        Optional<PlayerUser> user = playerUserRepo.findById(userId);
-        if (user.isPresent()) {
-            model.addAttribute("playerUser", user.get());
-            return "userProfile";
-        } else {
-            model.addAttribute("errorMessage", "User not found!");
-            return "error_page";
+        Optional<PlayerUser> userOptional = userRepo.findById(userId);
+        if (userOptional.isPresent()) {
+            PlayerUser user = userOptional.get();
+            model.addAttribute("playerUser", user);
+            // Redirect based on user role
+            if ("ROLE_ADMIN".equals(user.getRole())) {
+                return "adminProfile"; // Admin profile page
+            } else {
+                return "userProfile"; // Player profile page
+            }
         }
+        model.addAttribute("errorMessage", "User not found!");
+        return "error_page";
     }
 
     // Update user profile
     @PostMapping("/updateProfile/{id}")
-    public String updateUserProfile(@PathVariable("id") Long id, @ModelAttribute PlayerUserDTO playerUserDTO, Model model) {
-        Optional<PlayerUser> existingUser = playerUserRepo.findById(playerUserDTO.getId());
+    public String updateUserProfile(@PathVariable("id") Long id, @ModelAttribute UserDTO userDTO, Model model) {
+        Optional<PlayerUser> existingUser = userRepo.findById(userDTO.getId());
         if (existingUser.isPresent()) {
             PlayerUser user = existingUser.get();
             // Update editable fields
-            user.setFirstName(playerUserDTO.getFirstName());
-            user.setLastName(playerUserDTO.getLastName());
-            user.setEmail(playerUserDTO.getEmail());
-            user.setPhoneNumber(playerUserDTO.getPhoneNumber());
-            user.setAddress(playerUserDTO.getAddress());
-            user.setRole(playerUserDTO.getRole());
+            user.setFirstName(userDTO.getFirstName());
+            user.setLastName(userDTO.getLastName());
+            user.setEmail(userDTO.getEmail());
+            user.setPhoneNumber(userDTO.getPhoneNumber());
+            user.setAddress(userDTO.getAddress());
+            user.setRole(userDTO.getRole());
 
-            playerUserRepo.save(user); // Save updated user
+            userRepo.save(user); // Save updated user
             model.addAttribute("successMessage", "Profile updated successfully!");
             model.addAttribute("playerUser", user);
             // Redirect to the user's profile page with their userId

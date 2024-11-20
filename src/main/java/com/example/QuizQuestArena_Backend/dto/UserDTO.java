@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class PlayerUserDTO {
+public class UserDTO {
 
     @ReadOnlyProperty
     private Long id; // Needed for identifying the user during updates
@@ -38,8 +38,8 @@ public class PlayerUserDTO {
     private MultipartFile profilePicture;
 
     // Overloaded constructor for Entity to DTO mapping
-    public PlayerUserDTO(Long id, String username, String firstName, String lastName, String email,
-                         String phoneNumber, String address, String role, String profilePictureUrl) {
+    public UserDTO(Long id, String username, String firstName, String lastName, String email,
+                   String phoneNumber, String address, String role, String profilePictureUrl) {
         this.id = id;
         this.username = username;
         this.password = null; // Password hidden during mapping

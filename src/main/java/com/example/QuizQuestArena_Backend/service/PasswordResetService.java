@@ -1,7 +1,7 @@
 package com.example.QuizQuestArena_Backend.service;
 
 import com.example.QuizQuestArena_Backend.db.PasswordResetRepo;
-import com.example.QuizQuestArena_Backend.db.PlayerUserRepo;
+import com.example.QuizQuestArena_Backend.db.UserRepo;
 import com.example.QuizQuestArena_Backend.model.PasswordReset;
 import com.example.QuizQuestArena_Backend.model.PlayerUser;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ public class PasswordResetService {
     private PasswordResetRepo passwordResetRepo;
 
     @Autowired
-    private PlayerUserRepo playerUserRepo;
+    private UserRepo userRepo;
 
 //    @Autowired
 //    private JavaMailSender mailSender;
@@ -33,7 +33,7 @@ public class PasswordResetService {
      */
     public String requestPasswordReset(String email) {
         // Validate if user exists
-        Optional<PlayerUser> userOptional = playerUserRepo.findByEmail(email);
+        Optional<PlayerUser> userOptional = userRepo.findByEmail(email);
 
         if (userOptional.isEmpty()) {
             return "No user found with the given email address.";
@@ -111,7 +111,7 @@ public class PasswordResetService {
         PlayerUser user = resetRequest.getUser();
         user.setPassword(newPassword); // Directly save the plain text password
         //user.setPassword(hashPassword(newPassword)); // Hash the password
-        playerUserRepo.save(user);
+        userRepo.save(user);
 
         // Remove the reset request after successful reset
         passwordResetRepo.delete(resetRequest);

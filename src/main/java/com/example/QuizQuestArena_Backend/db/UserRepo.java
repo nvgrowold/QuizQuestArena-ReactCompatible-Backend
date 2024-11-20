@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface PlayerUserRepo extends CrudRepository<PlayerUser, Long> {
+public interface UserRepo extends CrudRepository<PlayerUser, Long> {
 
     Optional<PlayerUser> findByUsername(String username);
 

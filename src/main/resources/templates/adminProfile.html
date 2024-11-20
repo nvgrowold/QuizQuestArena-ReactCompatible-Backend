@@ -2,8 +2,8 @@
 <html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="UTF-8">
-  <title>Player Profile</title>
-  <link rel="stylesheet" href="css/userProfile.css">
+  <title>Admin Profile</title>
+  <link rel="stylesheet" href="css/adminProfile.css">
 </head>
 <body>
 
@@ -12,7 +12,7 @@
 
   <input type="hidden" name="id" th:value="${playerUser.id}">
 
-  <h1>Player Profile</h1>
+  <h1>Admin Profile</h1>
   <label>User ID:</label>
   <input type="text" name="id" th:value="${playerUser.id}" disabled><br>
 
@@ -38,14 +38,11 @@
   <input type="text" name="role" th:value="${playerUser.role}" disabled><br>
 
   <input type="submit" value="Save"><br><br>
-
-    <button onclick="location.href='/quiz/ongoing'">Ongoing Quizzes</button><br><br>
-    <button onclick="location.href='/quiz/upcoming'">Upcoming Quizzes</button><br><br>
-    <button onclick="location.href='/quiz/past'">Past Quizzes</button><br><br>
-    <button onclick="location.href='/quiz/participated'">Participated Quizzes</button>
     <!-- Button to view quiz scores -->
     <div>
-      <a href="/quizScoresPage" class="button">View Quiz Scores</a>
+      <a href="/quizScoresPage" class="button">View Quiz Scores</a><br><br>
+      <a href="/createTournamentPage" class="button">Create A New Quiz Tournament</a><br><br>
+      <a href="/manageTournamentPage" class="button">Manage All Quiz Tournament</a>
     </div><br>
   <div>
     <a href="/logout" class="logout-button">Logout</a>
