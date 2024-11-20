@@ -3,6 +3,7 @@ package com.example.QuizQuestArena_Backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -18,6 +19,14 @@ public class Quiz {
     private Long id;
 
     private String name;
+
+    private String category;
+
+    private String difficulty;
+
+    private LocalDateTime startDate;
+
+    private LocalDateTime endDate;
 
     private int likes;
 

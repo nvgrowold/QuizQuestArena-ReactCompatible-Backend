@@ -1,11 +1,15 @@
 package com.example.QuizQuestArena_Backend.controller;
 
+import com.example.QuizQuestArena_Backend.dto.QuizDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
 import com.example.QuizQuestArena_Backend.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.time.LocalDateTime;
 
@@ -16,6 +20,7 @@ import java.util.List;
  * Handles incoming HTTP requests related to quizzes and delegates to QuizService.
  */
 @Controller// Use @Controller to enable HTML view rendering, don't use @RestController
+@RequestMapping("/admin") //admin input submit create quiz  request
 public class QuizController {
 
     @Autowired
@@ -55,6 +60,24 @@ public class QuizController {
 
         // Return the name of the HTML template (Thymeleaf will map this to quizScoresPage.html)
         return "quizScoresPage";
+    }
+
+    @GetMapping("/create-quiz")
+    public String getCreateQuizPage(Model model) {
+        model.addAttribute("quizDTO", new QuizDTO());
+        return "createQuiz";
+    }
+
+    @PostMapping("/create-quiz")
+    public String createQuiz(@ModelAttribute QuizDTO quizDTO, Model model) {
+        try {
+            quizService.createQuiz(quizDTO);
+            model.addAttribute("successMessage", "Quiz created successfully!");
+            return "redirect:/userProfile";
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", "Failed to create quiz: " + e.getMessage());
+            return "createQuiz";
+        }
     }
 
 }
