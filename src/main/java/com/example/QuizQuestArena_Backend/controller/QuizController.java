@@ -168,4 +168,28 @@ public class QuizController {
         }
     }
 
+    //endpoints for player user view all quizzes
+    @GetMapping("/viewAllQuizzes")
+    public String viewAllQuizzes(HttpSession session, Model model) {
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) {
+            return "redirect:/login"; // Redirect to login if session is invalid
+        }
+
+        // fetching quizzes by different types
+        List<Quiz> ongoingQuizzes = quizService.getOngoingQuizzes();
+        List<Quiz> upcomingQuizzes = quizService.getUpcomingQuizzes();
+        List<Quiz> pastQuizzes = quizService.getPastQuizzes();
+        List<Quiz> participatedQuizzes = quizService.getParticipatedQuizzes(userId);
+
+        // adding the fetched quizzes to model
+        // Model parameter is part of Spring MVC that acts as container
+        // for passing data between the controller and the view (HTML templates)
+        model.addAttribute("ongoingQuizzes", ongoingQuizzes);
+        model.addAttribute("upcomingQuizzes", upcomingQuizzes);
+        model.addAttribute("pastQuizzes", pastQuizzes);
+        model.addAttribute("participatedQuizzes", participatedQuizzes);
+
+        return "viewAllQuizzes"; // Thymeleaf template name
+    }
 }

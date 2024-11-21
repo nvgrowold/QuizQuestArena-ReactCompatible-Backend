@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>View Quizzes</title>
+    <link rel="stylesheet" href="/css/viewAllQuizzes.css">
+</head>
+<body>
+<div class="container">
+    <h1>All Quiz Tournaments</h1>
+
+    <h2>Ongoing Quizzes</h2>
+    <ul>
+        <li th:each="quiz : ${ongoingQuizzes}">
+            <span th:text="${quiz.name}"></span>
+        </li>
+    </ul>
+
+    <h2>Upcoming Quizzes</h2>
+    <ul>
+        <li th:each="quiz : ${upcomingQuizzes}">
+            <span th:text="${quiz.name}"></span>
+        </li>
+    </ul>
+
+    <h2>Past Quizzes</h2>
+    <ul>
+        <li th:each="quiz : ${pastQuizzes}">
+            <span th:text="${quiz.name}"></span>
+        </li>
+    </ul>
+
+    <h2>Participated Quizzes</h2>
+    <ul>
+        <li th:each="quiz : ${participatedQuizzes}">
+            <span th:text="${quiz.name}"></span>
+        </li>
+    </ul>
+
+    <a href="/logout">Logout</a>
+</div>
+</body>
+</html>

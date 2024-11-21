@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -181,5 +182,26 @@ public class QuizService {
             throw new IllegalArgumentException("Quiz not found with id: " + id);
         }
         quizRepo.deleteById(id);
+    }
+
+
+    //for playerUser view ongoing, upcoming, past and participated quizzes function
+    public List<Quiz> getOngoingQuizzes() {
+        LocalDateTime now = LocalDateTime.now();
+        return quizRepo.findByStartDateBeforeAndEndDateAfter(now, now);
+    }
+
+    public List<Quiz> getUpcomingQuizzes() {
+        LocalDateTime now = LocalDateTime.now();
+        return quizRepo.findByStartDateAfter(now);
+    }
+
+    public List<Quiz> getPastQuizzes() {
+        LocalDateTime now = LocalDateTime.now();
+        return quizRepo.findByEndDateBefore(now);
+    }
+
+    public List<Quiz> getParticipatedQuizzes(Long userId) {
+        return quizRepo.findParticipatedQuizzesByUserId(userId);
     }
 }

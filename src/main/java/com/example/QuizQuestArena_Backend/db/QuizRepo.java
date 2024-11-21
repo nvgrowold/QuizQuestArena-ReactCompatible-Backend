@@ -4,7 +4,9 @@ import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
 import com.example.QuizQuestArena_Backend.model.Quiz;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -33,4 +35,37 @@ public interface QuizRepo extends JpaRepository<Quiz, Long> {
             "GROUP BY q.id, p.id " +    // Grouping by quiz ID and player ID
             "ORDER BY s.score DESC")    // Sorting by player score in descending order
     List<QuizScoreDTO> getQuizScores();
+
+    /**
+     * Spring Data JPA built-in query methods
+     * Fetch ongoing quizzes (startDate <= now <= endDate).
+     * Spring boot generate this SQL query dynamically at runtime to fetch from databas
+     * [SELECT * FROM quiz WHERE start_date <= ? AND end_date >= ?]
+     */
+    List<Quiz> findByStartDateBeforeAndEndDateAfter(LocalDateTime now1, LocalDateTime now2);
+
+    /**
+     * * Spring Data JPA built-in query methods
+     * Fetch upcoming quizzes (startDate > now).
+     * SELECT * FROM quiz WHERE start_date > ?;
+     */
+    List<Quiz> findByStartDateAfter(LocalDateTime now);
+
+    /**
+     * * Spring Data JPA built-in query methods
+     * Fetch past quizzes (endDate < now).
+     * SELECT * FROM quiz WHERE end_date < ?;
+     */
+    List<Quiz> findByEndDateBefore(LocalDateTime now);
+
+    /** self-customised JPQL query
+     * Fetch quizzes participated by a specific player.
+     * SELECT q.*
+     * FROM quiz q
+     * JOIN quiz_participants qp ON q.id = qp.quiz_id
+     * JOIN player_user p ON qp.player_id = p.id
+     * WHERE p.id = ?;
+     */
+    @Query("SELECT q FROM Quiz q JOIN q.participants p WHERE p.id = :userId")
+    List<Quiz> findParticipatedQuizzesByUserId(@Param("userId") Long userid);
 }

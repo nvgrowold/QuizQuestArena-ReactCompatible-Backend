@@ -33,4 +33,7 @@ public class Quiz {
     //cascade remove parent and orphanRemoval will remove it's child as well
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Score> scores; // Relationship to Score
+
+    @ManyToMany(mappedBy = "participatedQuizzes")
+    private List<PlayerUser> participants; // Users who participated
 }

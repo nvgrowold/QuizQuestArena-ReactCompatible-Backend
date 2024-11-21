@@ -33,11 +33,19 @@ public class PlayerUser {
 
     private String address;
 
-    private String role; // ROLE_PLAYER
+    private String role; // ROLE_PLAYER, ROLE_ADMIN
 
     private int score;
 
     private String profilePicture; // file path or URL
+
+    @ManyToMany
+    @JoinTable(
+            name = "quiz_participants",
+            joinColumns = @JoinColumn(name = "player_id"),
+            inverseJoinColumns = @JoinColumn(name = "quiz_id")
+    )
+    private List<Quiz> participatedQuizzes; // quizzes this user participated
 
     // Custom constructor matching the fields in mapToEntity
     public PlayerUser(Long id, String username, String password, String firstName, String lastName,
