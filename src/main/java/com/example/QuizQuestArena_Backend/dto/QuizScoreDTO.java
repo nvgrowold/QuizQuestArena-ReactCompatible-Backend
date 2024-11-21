@@ -31,5 +31,8 @@ public class QuizScoreDTO {
         this.playerName = playerName;
         this.completedDate = completedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         this.playerScore = playerScore;
+        this.completedDate = (completedDate != null)
+                ? completedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                : null;
     }
 }

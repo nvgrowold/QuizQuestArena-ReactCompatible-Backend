@@ -20,7 +20,8 @@ import java.util.List;
  * Handles incoming HTTP requests related to quizzes and delegates to QuizService.
  */
 @Controller// Use @Controller to enable HTML view rendering, don't use @RestController
-@RequestMapping("/admin") //admin input submit create quiz  request
+//@RequestMapping("/admin") //admin input submit create quiz  request
+@RequestMapping
 public class QuizController {
 
     @Autowired
@@ -54,6 +55,23 @@ public class QuizController {
 //        );
 //        // Fetch scores from the service layer
         List<QuizScoreDTO> scores = quizService.getQuizScores();
+
+        //debug log
+        if (scores == null || scores.isEmpty()) {
+            System.out.println("No quiz scores fetched.");
+        } else {
+            System.out.println("Fetched scores: " + scores); // Add debug log
+        }
+
+        // Debugging: Print the scores to the console
+        for (QuizScoreDTO score : scores) {
+            System.out.println("Quiz ID: " + score.getQuizId());
+            System.out.println("Quiz Name: " + score.getQuizName());
+            System.out.println("Average Score: " + score.getAverageScore());
+            System.out.println("Player Name: " + score.getPlayerName());
+            System.out.println("Player Score: " + score.getPlayerScore());
+            System.out.println("Total Players: " + score.getTotalPlayers());
+        }
 
         // Add scores to the model so they can be accessed in the Thymeleaf template
         model.addAttribute("scores", scores);

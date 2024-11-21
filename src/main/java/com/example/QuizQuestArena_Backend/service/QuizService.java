@@ -41,7 +41,20 @@ public class QuizService {
      * return A list of QuizScoreDTO objects containing detailed quiz score information.
      */
     public List<QuizScoreDTO> getQuizScores() {
-        return quizRepo.getQuizScores();
+
+        List<QuizScoreDTO> scores = quizRepo.getQuizScores();
+        System.out.println("Quiz Scores: " + scores); // Debug log
+        // Debugging: Print the scores to the console
+        for (QuizScoreDTO score : scores) {
+            System.out.println("Quiz ID: " + score.getQuizId());
+            System.out.println("Quiz Name: " + score.getQuizName());
+            System.out.println("Average Score: " + score.getAverageScore());
+            System.out.println("Player Name: " + score.getPlayerName());
+            System.out.println("Player Score: " + score.getPlayerScore());
+            System.out.println("Total Players: " + score.getTotalPlayers());
+        }
+
+        return scores;
     }
 
     /**

@@ -19,7 +19,7 @@ public interface QuizRepo extends CrudRepository<Quiz, Long> {
     @Query("SELECT new com.example.QuizQuestArena_Backend.dto.QuizScoreDTO(" +
             "q.id, " +                  // Quiz ID
             "q.name, " +                // The name of the quiz
-            "COUNT(p.id), " +    // Total number of players who participated
+            "COUNT(s.player.id), " +    // Total number of players who participated
             "AVG(s.score), " +          // Average score for the quiz
             "q.likes, " +               // Number of likes the quiz received
             "p.id, " +                  // Player ID
