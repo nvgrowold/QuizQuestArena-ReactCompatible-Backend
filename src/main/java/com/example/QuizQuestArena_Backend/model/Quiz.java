@@ -30,6 +30,7 @@ public class Quiz {
 
     private int likes;
 
-    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    //cascade remove parent and orphanRemoval will remove it's child as well
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Score> scores; // Relationship to Score
 }

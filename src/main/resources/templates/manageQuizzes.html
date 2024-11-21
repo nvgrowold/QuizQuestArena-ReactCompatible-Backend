@@ -22,11 +22,11 @@
     <tbody>
     <tr th:each="quiz : ${quizzes}">
         <td th:text="${quiz.id}"></td>
-        <td th:text="${quiz.name != null ? quiz.name : 'N/A'}"></td> <!-- Null-safe handling -->
-        <td th:text="${quiz.category != null ? quiz.category : 'N/A'}"></td> <!-- Null-safe handling -->
-        <td th:text="${quiz.difficulty != null ? quiz.difficulty : 'N/A'}"></td> <!-- Null-safe handling -->
-        <td th:text="${quiz.startDate != null ? #dates.format(quiz.startDate, 'yyyy-MM-dd\'T\'HH:mm') : 'N/A'}"></td> <!-- Null-safe -->
-        <td th:text="${quiz.endDate != null ? #dates.format(quiz.endDate, 'yyyy-MM-dd\'T\'HH:mm') : 'N/A'}"></td> <!-- Null-safe -->
+        <td th:text="${quiz.name}"></td> <!-- Null-safe handling -->
+        <td th:text="${quiz.category}"></td> <!-- Null-safe handling -->
+        <td th:text="${quiz.difficulty}"></td> <!-- Null-safe handling -->
+        <td th:text="${quiz.startDate}"></td> <!-- Null-safe -->
+        <td th:text="${quiz.endDate}"></td> <!-- Null-safe -->
         <td>
             <button class="edit-button"
                     th:data-id="${quiz.id}"
@@ -45,14 +45,15 @@
 
 <!-- Edit Quiz Modal -->
 <div id="editModal" style="display:none;">
+    <h3>Edit Quiz</h3>
     <form id="editForm">
         <input type="hidden" id="quizId" />
         <label for="quizName">Name:</label>
         <input type="text" id="quizName" required /><br />
         <label for="quizCategory">Category:</label>
-        <input type="text" id="quizCategory" required /><br />
+        <input type="text" id="quizCategory" readonly /><br />
         <label for="quizDifficulty">Difficulty:</label>
-        <input type="text" id="quizDifficulty" required /><br />
+        <input type="text" id="quizDifficulty" readonly /><br />
         <label for="startDate">Start Date:</label>
         <input type="datetime-local" id="startDate" required /><br />
         <label for="endDate">End Date:</label>
@@ -63,26 +64,36 @@
 </div>
 
 <!-- Delete Confirmation -->
-<div id="deleteModal" style="display:none;">
+<div id="deleteModal" style="display:none; background: #eee; padding: 20px; border: 1px solid black;">
+    <h3>Delete Confirmation</h3>
     <p id="deleteMessage"></p>
     <button id="confirmDelete">Yes</button>
     <button id="cancelDelete">No</button>
 </div>
-
 <script>
     $(document).ready(function () {
+        let selectedQuizId;
+
         // Open Edit Modal
         $(document).on('click', '.edit-button', function () {
-            $('#quizId').val($(this).data('id'));
-            $('#quizName').val($(this).data('name'));
-            $('#quizCategory').val($(this).data('category'));
-            $('#quizDifficulty').val($(this).data('difficulty'));
-            $('#startDate').val($(this).data('start-date'));
-            $('#endDate').val($(this).data('end-date'));
+            const quizId = $(this).data('id');
+            const quizName = $(this).data('name');
+            const quizCategory = $(this).data('category');
+            const quizDifficulty = $(this).data('difficulty');
+            const startDate = $(this).data('start-date');
+            const endDate = $(this).data('end-date');
+
+            $('#quizId').val(quizId);
+            $('#quizName').val(quizName);
+            $('#quizCategory').val(quizCategory);
+            $('#quizDifficulty').val(quizDifficulty);
+            $('#startDate').val(startDate);
+            $('#endDate').val(endDate);
+
             $('#editModal').show();
         });
 
-        // Save Changes in Edit Modal
+        // Save Changes
         $('#saveChanges').on('click', function () {
             const quizData = {
                 id: $('#quizId').val(),
@@ -90,13 +101,8 @@
                 category: $('#quizCategory').val(),
                 difficulty: $('#quizDifficulty').val(),
                 startDate: $('#startDate').val(),
-                endDate: $('#endDate').val()
+                endDate: $('#endDate').val(),
             };
-
-            if (!quizData.name || !quizData.category || !quizData.difficulty || !quizData.startDate || !quizData.endDate) {
-                alert('All fields are required!');
-                return;
-            }
 
             $.ajax({
                 type: 'POST',
@@ -104,40 +110,43 @@
                 contentType: 'application/json',
                 data: JSON.stringify(quizData),
                 success: function (response) {
-                    if (response === 'success') {
-                        alert('Quiz updated successfully!');
-                        location.reload();
-                    } else {
-                        alert('Failed to update quiz: ' + response);
-                    }
+                    $('#message').text('Quiz updated successfully!').show();
+                    location.reload();
+                },
+                error: function () {
+                    alert('Failed to update quiz.');
                 }
             });
         });
 
-        // Open Delete Confirmation
+        // Open Delete Modal
         $(document).on('click', '.delete-button', function () {
-            const quizId = $(this).data('id');
+            selectedQuizId = $(this).data('id');
             const quizName = $(this).data('name');
             $('#deleteMessage').text(`Are you sure you want to delete the quiz "${quizName}"?`);
             $('#deleteModal').show();
+        });
 
-            $('#confirmDelete').off().on('click', function () {
-                $.ajax({
-                    type: 'POST',
-                    url: `/delete-quiz/${quizId}`,
-                    success: function (response) {
-                        if (response === 'success') {
-                            alert('Quiz deleted successfully!');
-                            location.reload();
-                        } else {
-                            alert('Failed to delete quiz: ' + response);
-                        }
+        // Confirm Delete
+        $('#confirmDelete').on('click', function () {
+            $.ajax({
+                type: 'POST',
+                url: `/delete-quiz/${selectedQuizId}`, // Use the correct variable
+                success: function (response) {
+                    if (response === 'success') {
+                        alert('Quiz deleted successfully!');
+                        location.reload();
+                    } else {
+                        alert('Failed to delete quiz: ' + response);
                     }
-                });
+                },
+                error: function () {
+                    alert('Error while deleting the quiz.');
+                }
             });
         });
 
-        // Close Modals
+        // Cancel Actions
         $('#cancelEdit').on('click', function () {
             $('#editModal').hide();
         });

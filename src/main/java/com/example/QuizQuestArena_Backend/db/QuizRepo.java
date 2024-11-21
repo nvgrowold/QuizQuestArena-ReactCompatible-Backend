@@ -2,8 +2,8 @@ package com.example.QuizQuestArena_Backend.db;
 
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
 import com.example.QuizQuestArena_Backend.model.Quiz;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;
 
@@ -11,7 +11,8 @@ import java.util.List;
  * performing database operations related to quiz.
  * Extends CrudRepository to provide basic CRUD functionality for Quiz entity.
  */
-public interface QuizRepo extends CrudRepository<Quiz, Long> {
+//switched to JpaReposity: Basic CRUD operations are inherited from JpaRepository
+public interface QuizRepo extends JpaRepository<Quiz, Long> {
     /**
      * Custom query to fetch detailed quiz scores for each quiz tournament.
      * returning a list of QuizScoreDTO objects with sorted player scores in descending order.

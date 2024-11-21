@@ -2,14 +2,14 @@ package com.example.QuizQuestArena_Backend.controller;
 
 import com.example.QuizQuestArena_Backend.dto.QuizDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
+import com.example.QuizQuestArena_Backend.model.Quiz;
 import com.example.QuizQuestArena_Backend.service.QuizService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
@@ -95,6 +95,35 @@ public class QuizController {
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Failed to create quiz: " + e.getMessage());
             return "createQuiz";
+        }
+    }
+
+    @GetMapping("/manage-quizzes")
+    public String manageQuizzes(Model model) {
+        List<Quiz> quizzes = quizService.getAllQuizzes();
+        model.addAttribute("quizzes", quizzes);
+        return "manageQuizzes"; // Thymeleaf template name
+    }
+
+    @PostMapping("/update-quiz")
+    @ResponseBody
+    public ResponseEntity<String> updateQuiz(@RequestBody QuizDTO quizDTO) {
+        try {
+            quizService.updateQuiz(quizDTO);
+            return ResponseEntity.ok("success");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("error");
+        }
+    }
+
+    @PostMapping("/delete-quiz/{id}")
+    @ResponseBody
+    public ResponseEntity<String> deleteQuiz(@PathVariable Long id) {
+        try {
+            quizService.deleteQuiz(id);
+            return ResponseEntity.ok("success");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("error");
         }
     }
 

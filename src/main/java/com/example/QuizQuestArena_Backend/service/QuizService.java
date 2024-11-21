@@ -160,4 +160,26 @@ public class QuizService {
         // Return the corresponding category ID or an empty string if the category is not mapped.
         return categories.getOrDefault(category, "");
     }
+
+    public List<Quiz> getAllQuizzes() {
+        return quizRepo.findAll();
+    }
+
+    public void updateQuiz(QuizDTO quizDTO) {
+        Quiz quiz = quizRepo.findById(quizDTO.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Quiz not found with id: " + quizDTO.getId()));
+        quiz.setName(quizDTO.getName());
+        quiz.setCategory(quizDTO.getCategory());
+        quiz.setDifficulty(quizDTO.getDifficulty());
+        quiz.setStartDate(quizDTO.getStartDate());
+        quiz.setEndDate(quizDTO.getEndDate());
+        quizRepo.save(quiz);
+    }
+
+    public void deleteQuiz(Long id) {
+        if (!quizRepo.existsById(id)) {
+            throw new IllegalArgumentException("Quiz not found with id: " + id);
+        }
+        quizRepo.deleteById(id);
+    }
 }

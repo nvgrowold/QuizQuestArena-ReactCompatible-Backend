@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuizDTO {
+    private Long id;
     private String name;
     private String category;
     private String difficulty;
