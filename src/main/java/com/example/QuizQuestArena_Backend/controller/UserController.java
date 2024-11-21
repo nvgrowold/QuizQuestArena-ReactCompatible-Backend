@@ -103,17 +103,17 @@ public class UserController {
                 userDTO.getUsername(), userDTO.getPassword());
 
         if (authenticatedUser.isPresent()) {
+            PlayerUser user = authenticatedUser.get();
+            session.setAttribute("userId", user.getId()); // Store userId in session
            // model.addAttribute("successMessage", "Login Successful!"); // Add success message
-            model.addAttribute("playerUser", authenticatedUser.get()); // Pass the user data to the profile page
+            model.addAttribute("playerUser", mapToDTO(user));
             System.out.println("Login successful for user: " + userDTO.getUsername());
-            session.setAttribute("userId", authenticatedUser.get().getId()); // Store userId in session
-            System.out.println("Logged-in User ID stored in session: " + authenticatedUser.get().getId());
             return "redirect:/userProfile"; // User ID is stored in session
-            //return "redirect:/userProfile?userId=" + authenticatedUser.get().getId(); // Pass userId in the redirect
         } else {
             model.addAttribute("errorMessage", "Invalid login or password!");
+            System.out.println("Session is null or expired. Redirecting to login.");
             System.out.println("Login failed for user: " + userDTO.getUsername());
-            return "login_page";
+            return "redirect:/login_page";
         }
     }
 
@@ -164,18 +164,12 @@ public class UserController {
         Optional<PlayerUser> userOptional = userRepo.findById(userId);
         if (userOptional.isPresent()) {
             PlayerUser user = userOptional.get();
-            model.addAttribute("playerUser", user);
+            model.addAttribute("playerUser", mapToDTO(user));
 
-            System.out.println("User ID from session: " + userId);
             System.out.println("PlayerUser object: " + user);
 
             // Redirect based on user role
-            if ("ROLE_ADMIN".equals(user.getRole())) {
-
-                return "adminProfile"; // Admin profile page
-            } else {
-                return "userProfile"; // Player profile page
-            }
+            return "ROLE_ADMIN".equals(user.getRole()) ? "adminProfile" : "userProfile";
         }
         model.addAttribute("errorMessage", "User not found!");
         return "error_page";
@@ -199,7 +193,7 @@ public class UserController {
             model.addAttribute("playerUser", user); // Add user to the model
 
             // Add debug log to check if the object is added to the model
-            System.out.println("PlayerUser in model: " + model.getAttribute("playerUser"));
+            System.out.println("AdminUser in adminProfile: " + user);
             return "adminProfile"; // Return the adminProfile view
         } else {
             model.addAttribute("errorMessage", "User not found!");
@@ -219,13 +213,17 @@ public class UserController {
             user.setEmail(userDTO.getEmail());
             user.setPhoneNumber(userDTO.getPhoneNumber());
             user.setAddress(userDTO.getAddress());
-            user.setRole(userDTO.getRole());
+            //user.setRole(userDTO.getRole());
 
             userRepo.save(user); // Save updated user
             model.addAttribute("successMessage", "Profile updated successfully!");
             model.addAttribute("playerUser", user);
-            // Redirect to the user's profile page with their userId
-            return "redirect:/userProfile?userId=" + user.getId();
+            // Redirect based on role
+            if ("ROLE_ADMIN".equals(user.getRole())) {
+                return "redirect:/adminProfile?userId=" + user.getId();
+            } else {
+                return "redirect:/userProfile?userId=" + user.getId();
+            }
         } else {
             model.addAttribute("errorMessage", "User not found!");
             return "error_page";

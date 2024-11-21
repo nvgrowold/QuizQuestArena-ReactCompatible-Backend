@@ -122,14 +122,15 @@ public class QuizController {
 
 
             // Fetch user and check role
-            PlayerUser user = userRepo.findById(userId).orElse(null);
+            PlayerUser user = userRepo.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
             if (user == null || !"ROLE_ADMIN".equals(user.getRole())) {
                 return "redirect:/userProfile"; // Redirect non-admins to userProfile
             }
 
             // Add success message and direct to adminProfile
             model.addAttribute("successMessage", "Quiz created successfully!");
-            return "adminProfile";
+            return "redirect:/adminProfile?userId=" + userId;
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Failed to create quiz: " + e.getMessage());
             return "createQuiz"; // Return to the form view with an error

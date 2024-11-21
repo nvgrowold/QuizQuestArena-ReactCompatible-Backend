@@ -32,6 +32,7 @@ public class UserDTO {
 
     private String phoneNumber;
     private String address;
+    @ReadOnlyProperty
     private String role;
 
     // Use MultipartFile for file uploads
