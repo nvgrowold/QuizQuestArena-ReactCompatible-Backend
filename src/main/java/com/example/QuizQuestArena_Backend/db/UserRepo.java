@@ -17,6 +17,6 @@ public interface UserRepo extends CrudRepository<PlayerUser, Long> {
     //for password reset service
     Optional<PlayerUser> findByEmail(String username);
 
-    // Fetch all users with a specific role
-    List<PlayerUser> findByRole(String role);
+    // Fetch all users WITHOUT a specific role
+    List<PlayerUser> findAllByRoleNot(String role);
 }

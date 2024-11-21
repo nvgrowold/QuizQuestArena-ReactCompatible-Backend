@@ -6,7 +6,8 @@
   <link rel="stylesheet" href="css/adminProfile.css">
 </head>
 <body>
-
+<h1>Welcome, Admin!</h1>
+<p th:text="${playerUser != null ? 'User ID: ' + playerUser.id : 'User not available'}"></p>
 <div class="form">
   <form th:action="@{/updateProfile/{id}(id=${playerUser.id})}" method="post">
 

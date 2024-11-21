@@ -107,6 +107,7 @@ public class UserController {
             model.addAttribute("playerUser", authenticatedUser.get()); // Pass the user data to the profile page
             System.out.println("Login successful for user: " + userDTO.getUsername());
             session.setAttribute("userId", authenticatedUser.get().getId()); // Store userId in session
+            System.out.println("Logged-in User ID stored in session: " + authenticatedUser.get().getId());
             return "redirect:/userProfile"; // User ID is stored in session
             //return "redirect:/userProfile?userId=" + authenticatedUser.get().getId(); // Pass userId in the redirect
         } else {
@@ -164,8 +165,13 @@ public class UserController {
         if (userOptional.isPresent()) {
             PlayerUser user = userOptional.get();
             model.addAttribute("playerUser", user);
+
+            System.out.println("User ID from session: " + userId);
+            System.out.println("PlayerUser object: " + user);
+
             // Redirect based on user role
             if ("ROLE_ADMIN".equals(user.getRole())) {
+
                 return "adminProfile"; // Admin profile page
             } else {
                 return "userProfile"; // Player profile page
@@ -173,6 +179,32 @@ public class UserController {
         }
         model.addAttribute("errorMessage", "User not found!");
         return "error_page";
+    }
+
+    @GetMapping("/adminProfile")
+    public String adminProfile(HttpSession session, Model model) {
+        Long userId = (Long) session.getAttribute("userId"); // Fetch user ID from the session
+        System.out.println("Retrieved userId from session: " + userId);
+        if (userId == null) {
+            model.addAttribute("errorMessage", "No active session. Please log in.");
+            return "redirect:/login"; // Redirect to login if no session
+        }
+
+        // Fetch the user from the database
+        Optional<PlayerUser> userOptional = userRepo.findById(userId);
+
+        if (userOptional.isPresent()) {
+            PlayerUser user = userOptional.get();
+            System.out.println("User found: " + user);
+            model.addAttribute("playerUser", user); // Add user to the model
+
+            // Add debug log to check if the object is added to the model
+            System.out.println("PlayerUser in model: " + model.getAttribute("playerUser"));
+            return "adminProfile"; // Return the adminProfile view
+        } else {
+            model.addAttribute("errorMessage", "User not found!");
+            return "error_page"; // Handle the case where the user is not found
+        }
     }
 
     // Update user profile

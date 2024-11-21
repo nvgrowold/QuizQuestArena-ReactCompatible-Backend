@@ -1,14 +1,20 @@
 package com.example.QuizQuestArena_Backend.controller;
 
+import com.example.QuizQuestArena_Backend.db.UserRepo;
 import com.example.QuizQuestArena_Backend.dto.QuizDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
+import com.example.QuizQuestArena_Backend.model.PlayerUser;
 import com.example.QuizQuestArena_Backend.model.Quiz;
+import com.example.QuizQuestArena_Backend.service.NewQuizNotificationService;
 import com.example.QuizQuestArena_Backend.service.QuizService;
+import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -26,6 +32,12 @@ public class QuizController {
 
     @Autowired
     private QuizService quizService;
+
+    @Autowired
+    private UserRepo userRepo;
+
+    @Autowired
+    private NewQuizNotificationService newQuizNotificationService;
 
     LocalDateTime completedDate = LocalDateTime.now(); // Get the current date and time
 
@@ -87,16 +99,44 @@ public class QuizController {
     }
 
     @PostMapping("/create-quiz")
-    public String createQuiz(@ModelAttribute QuizDTO quizDTO, Model model) {
+     public String createQuiz(@ModelAttribute @Valid QuizDTO quizDTO, BindingResult bindingResult, HttpSession session, Model model) {
+//        if (bindingResult.hasErrors()) {
+//            // Add validation errors to the model for feedback
+//            model.addAttribute("errorMessage", "Validation errors occurred!");
+//            model.addAttribute("validationErrors", bindingResult.getFieldErrors());
+//            return "createQuiz"; // Return to the form view
+//        }
+
         try {
-            quizService.createQuiz(quizDTO);
+            // Create the quiz
+            Quiz quiz = quizService.createQuiz(quizDTO);
+            // Send notification emails
+            newQuizNotificationService.sendQuizCreatedEmail(quiz);
+
+            // Ensure user session is valid before redirecting
+            Long userId = (Long) session.getAttribute("userId");
+            System.out.println("UserId in session: " + userId);
+            if (userId == null) {
+                return "redirect:/login"; // Redirect to login if session is invalid
+            }
+
+
+            // Fetch user and check role
+            PlayerUser user = userRepo.findById(userId).orElse(null);
+            if (user == null || !"ROLE_ADMIN".equals(user.getRole())) {
+                return "redirect:/userProfile"; // Redirect non-admins to userProfile
+            }
+
+            // Add success message and direct to adminProfile
             model.addAttribute("successMessage", "Quiz created successfully!");
-            return "redirect:/userProfile";
+            return "adminProfile";
         } catch (Exception e) {
             model.addAttribute("errorMessage", "Failed to create quiz: " + e.getMessage());
-            return "createQuiz";
+            return "createQuiz"; // Return to the form view with an error
         }
     }
+
+
 
     @GetMapping("/manage-quizzes")
     public String manageQuizzes(Model model) {
