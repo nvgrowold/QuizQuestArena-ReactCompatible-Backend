@@ -1,42 +1,146 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
-    <title>View Quizzes</title>
+    <meta charset="UTF-8">
+    <title>View All Quizzes</title>
     <link rel="stylesheet" href="/css/viewAllQuizzes.css">
 </head>
 <body>
-<div class="container">
-    <h1>All Quiz Tournaments</h1>
+<h1>View All Quizzes</h1>
 
-    <h2>Ongoing Quizzes</h2>
-    <ul>
-        <li th:each="quiz : ${ongoingQuizzes}">
-            <span th:text="${quiz.name}"></span>
-        </li>
-    </ul>
-
-    <h2>Upcoming Quizzes</h2>
-    <ul>
-        <li th:each="quiz : ${upcomingQuizzes}">
-            <span th:text="${quiz.name}"></span>
-        </li>
-    </ul>
-
-    <h2>Past Quizzes</h2>
-    <ul>
-        <li th:each="quiz : ${pastQuizzes}">
-            <span th:text="${quiz.name}"></span>
-        </li>
-    </ul>
-
-    <h2>Participated Quizzes</h2>
-    <ul>
-        <li th:each="quiz : ${participatedQuizzes}">
-            <span th:text="${quiz.name}"></span>
-        </li>
-    </ul>
-
-    <a href="/logout">Logout</a>
+<!-- Ongoing Quizzes -->
+<h2>Ongoing Quizzes</h2>
+<div th:if="${ongoingQuizzes.empty}">
+    <p>No ongoing quizzes at the moment. Check back later!</p>
 </div>
+<table th:if="${!ongoingQuizzes.empty}">
+    <thead>
+    <tr>
+        <th>Quiz ID</th>
+        <th>Quiz Name</th>
+        <th>Category</th>
+        <th>Difficulty</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Likes</th>
+        <th>Total Participants</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="quiz : ${ongoingQuizzes}">
+        <td th:text="${quiz.id}"></td>
+        <td th:text="${quiz.name}"></td>
+        <td th:text="${quiz.category}"></td>
+        <td th:text="${quiz.difficulty}"></td>
+        <td th:text="${quiz.startDate}"></td>
+        <td th:text="${quiz.endDate}"></td>
+        <td th:text="${quiz.likes}"></td>
+        <td th:text="${quiz.participants.size()}"></td>
+        <td>
+            <form th:action="@{/quizzes/join}" method="post">
+                <input type="hidden" name="quizId" th:value="${quiz.id}">
+                <button type="submit">Join</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Upcoming Quizzes -->
+<h2>Upcoming Quizzes</h2>
+<div th:if="${upcomingQuizzes.empty}">
+    <p>No upcoming quizzes at the moment. Stay tuned!</p>
+</div>
+<table th:if="${!upcomingQuizzes.empty}">
+    <thead>
+    <tr>
+        <th>Quiz ID</th>
+        <th>Quiz Name</th>
+        <th>Category</th>
+        <th>Difficulty</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Likes</th>
+        <th>Total Participants</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="quiz : ${upcomingQuizzes}">
+        <td th:text="${quiz.id}"></td>
+        <td th:text="${quiz.name}"></td>
+        <td th:text="${quiz.category}"></td>
+        <td th:text="${quiz.difficulty}"></td>
+        <td th:text="${quiz.startDate}"></td>
+        <td th:text="${quiz.endDate}"></td>
+        <td th:text="${quiz.likes}"></td>
+        <td th:text="${quiz.participants.size()}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Past Quizzes -->
+<h2>Past Quizzes</h2>
+<div th:if="${pastQuizzes.empty}">
+    <p>No past quizzes available at the moment.</p>
+</div>
+<table th:if="${!pastQuizzes.empty}">
+    <thead>
+    <tr>
+        <th>Quiz ID</th>
+        <th>Quiz Name</th>
+        <th>Category</th>
+        <th>Difficulty</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Likes</th>
+        <th>Total Participants</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="quiz : ${pastQuizzes}">
+        <td th:text="${quiz.id}"></td>
+        <td th:text="${quiz.name}"></td>
+        <td th:text="${quiz.category}"></td>
+        <td th:text="${quiz.difficulty}"></td>
+        <td th:text="${quiz.startDate}"></td>
+        <td th:text="${quiz.endDate}"></td>
+        <td th:text="${quiz.likes}"></td>
+        <td th:text="${quiz.participants.size()}"></td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- Participated Quizzes -->
+<h2>Participated Quizzes</h2>
+<div th:if="${participatedQuizzes.empty}">
+    <p>You haven't participated in any quizzes yet. Join one now!</p>
+</div>
+<table th:if="${!participatedQuizzes.empty}">
+    <thead>
+    <tr>
+        <th>Quiz ID</th>
+        <th>Quiz Name</th>
+        <th>Category</th>
+        <th>Difficulty</th>
+        <th>Start Date</th>
+        <th>End Date</th>
+        <th>Likes</th>
+        <th>Total Participants</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="quiz : ${participatedQuizzes}">
+        <td th:text="${quiz.id}"></td>
+        <td th:text="${quiz.name}"></td>
+        <td th:text="${quiz.category}"></td>
+        <td th:text="${quiz.difficulty}"></td>
+        <td th:text="${quiz.startDate}"></td>
+        <td th:text="${quiz.endDate}"></td>
+        <td th:text="${quiz.likes}"></td>
+        <td th:text="${quiz.participants.size()}"></td>
+    </tr>
+    </tbody>
+</table>
+
 </body>
 </html>

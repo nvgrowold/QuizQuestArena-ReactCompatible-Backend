@@ -113,7 +113,7 @@ public class UserController {
             model.addAttribute("errorMessage", "Invalid login or password!");
             System.out.println("Session is null or expired. Redirecting to login.");
             System.out.println("Login failed for user: " + userDTO.getUsername());
-            return "redirect:/login_page";
+            return "redirect:/login";
         }
     }
 

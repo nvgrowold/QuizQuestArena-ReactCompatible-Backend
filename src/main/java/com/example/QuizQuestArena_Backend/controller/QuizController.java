@@ -182,6 +182,12 @@ public class QuizController {
         List<Quiz> pastQuizzes = quizService.getPastQuizzes();
         List<Quiz> participatedQuizzes = quizService.getParticipatedQuizzes(userId);
 
+        // debugging logs
+        System.out.println("Fetched Ongoing Quizzes: " + ongoingQuizzes.size());
+        System.out.println("Fetched Upcoming Quizzes: " + upcomingQuizzes.size());
+        System.out.println("Fetched Past Quizzes: " + pastQuizzes.size());
+        System.out.println("Fetched Participated Quizzes: " + participatedQuizzes.size());
+
         // adding the fetched quizzes to model
         // Model parameter is part of Spring MVC that acts as container
         // for passing data between the controller and the view (HTML templates)
