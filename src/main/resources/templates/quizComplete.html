@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Complete</title>
+    <link rel="stylesheet" href="/css/quizComplete.css">
+</head>
+<body>
+<h1>Quiz Completed!</h1>
+<h2 th:text="'Your Score: ' + ${score} + ' / 10'"></h2>
+
+<h3>Correct Answers:</h3>
+<ul>
+    <li th:each="answer : ${correctAnswers}">
+        Question: <span th:text="${answer.question}"></span>
+        - Correct Answer: <span th:text="${answer.correctAnswer}"></span>
+    </li>
+</ul>
+
+<a th:href="@{/viewAllQuizzes}">Go Back to Quizzes</a>
+</body>
+</html>

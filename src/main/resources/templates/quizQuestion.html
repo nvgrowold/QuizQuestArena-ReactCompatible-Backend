@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${quiz.name}">Quiz</title>
+</head>
+<body>
+<h1 th:text="${quiz.name}">Quiz Name</h1>
+<p th:text="'Question ' + (${currentQuestionIndex + 1}) + ' of ' + totalQuestions"></p>
+<div>
+    <p th:text="${currentQuestion.text}">Question Text</p>
+    <ul>
+        <li th:each="option : ${currentQuestion.options}" th:text="${option.optionText}">Option</li>
+    </ul>
+</div>
+<a th:if="${currentQuestionIndex > 0}"
+   th:href="@{/quizzes/play/{quizId}/question/{index}(quizId=${quiz.id}, index=${currentQuestionIndex - 1})}">
+    Previous
+</a>
+<a th:if="${currentQuestionIndex + 1 < totalQuestions}"
+   th:href="@{/quizzes/play/{quizId}/question/{index}(quizId=${quiz.id}, index=${currentQuestionIndex + 1})}">
+    Next
+</a>
+</body>
+</html>

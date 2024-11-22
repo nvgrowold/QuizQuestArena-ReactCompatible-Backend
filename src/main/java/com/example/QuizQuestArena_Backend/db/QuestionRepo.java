@@ -13,5 +13,5 @@ import java.util.List;
  * Extends CrudRepository to provide basic CRUD functionality for Quiz entity.
  */
 public interface QuestionRepo extends CrudRepository<Question, Long> {
-
+    List<Question> findAllByQuizId(Long quizId);
 }

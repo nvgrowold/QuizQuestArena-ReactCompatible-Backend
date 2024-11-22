@@ -1,6 +1,7 @@
 package com.example.QuizQuestArena_Backend.db;
 
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
+import com.example.QuizQuestArena_Backend.model.Question;
 import com.example.QuizQuestArena_Backend.model.Quiz;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -8,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * performing database operations related to quiz.
@@ -68,4 +70,11 @@ public interface QuizRepo extends JpaRepository<Quiz, Long> {
      */
     @Query("SELECT q FROM Quiz q JOIN q.participants p WHERE p.id = :userId")
     List<Quiz> findParticipatedQuizzesByUserId(@Param("userId") Long userid);
+
+    //for start quiz
+    @Query("SELECT q FROM Quiz q LEFT JOIN FETCH q.questions WHERE q.id = :quizId")
+    Optional<Quiz> findByIdWithQuestions(@Param("quizId") Long quizId);
+
+    List<Quiz> findAllById(Long id);
+
 }

@@ -2,8 +2,10 @@ package com.example.QuizQuestArena_Backend.service;
 
 import com.example.QuizQuestArena_Backend.db.QuestionRepo;
 import com.example.QuizQuestArena_Backend.db.QuizRepo;
+import com.example.QuizQuestArena_Backend.dto.QuestionDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
+import com.example.QuizQuestArena_Backend.model.Options;
 import com.example.QuizQuestArena_Backend.model.OpenTDBQuestion;
 import com.example.QuizQuestArena_Backend.model.OpenTDBResponse;
 import com.example.QuizQuestArena_Backend.model.Question;
@@ -18,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Service class for managing quiz-related operations.
@@ -203,5 +207,35 @@ public class QuizService {
 
     public List<Quiz> getParticipatedQuizzes(Long userId) {
         return quizRepo.findParticipatedQuizzesByUserId(userId);
+    }
+
+    //--------------ongoing quiz function-------------------------------
+    public Optional<Quiz> getQuizById(Long quizId) {
+        return quizRepo.findByIdWithQuestions(quizId);
+    }
+
+    /**
+     * Fetches a Quiz and maps it to a QuizDTO with its questions.
+     *
+     * @param quizId the ID of the quiz to fetch
+     * @return an Optional containing the QuizDTO or empty if not found
+     */
+    public Optional<QuizDTO> getQuizDTOById(Long quizId) {
+        return quizRepo.findByIdWithQuestions(quizId)
+                .map(quiz -> {
+                    QuizDTO dto = new QuizDTO();
+                    dto.setId(quiz.getId());
+                    dto.setName(quiz.getName());
+                    dto.setQuestions(quiz.getQuestions().stream()
+                            .map(q -> new QuestionDTO(
+                                    q.getId(),
+                                    q.getText(),
+                                    q.getOptions().stream()
+                                        .map(Options::getOptionText) // Convert List<Options> to List<String>
+                            .collect(Collectors.toList())
+                            ))
+                            .collect(Collectors.toList()));
+                    return dto;
+                });
     }
 }

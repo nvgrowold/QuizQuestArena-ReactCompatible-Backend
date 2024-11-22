@@ -4,6 +4,7 @@ import com.example.QuizQuestArena_Backend.db.UserRepo;
 import com.example.QuizQuestArena_Backend.dto.QuizDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
 import com.example.QuizQuestArena_Backend.model.PlayerUser;
+import com.example.QuizQuestArena_Backend.model.Question;
 import com.example.QuizQuestArena_Backend.model.Quiz;
 import com.example.QuizQuestArena_Backend.service.NewQuizNotificationService;
 import com.example.QuizQuestArena_Backend.service.QuizService;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Controller class for managing quiz-related endpoints.
@@ -137,8 +139,6 @@ public class QuizController {
         }
     }
 
-
-
     @GetMapping("/manage-quizzes")
     public String manageQuizzes(Model model) {
         List<Quiz> quizzes = quizService.getAllQuizzes();
@@ -197,5 +197,117 @@ public class QuizController {
         model.addAttribute("participatedQuizzes", participatedQuizzes);
 
         return "viewAllQuizzes"; // Thymeleaf template name
+    }
+
+
+    //----------------------Ongoing Quiz Functionality---------------------------------
+    //start a quiz: display the first question of the quiz.
+    @GetMapping("/quizzes/play/{quizId}")
+    public String startQuiz(@PathVariable("quizId") Long quizId, HttpSession session, Model model) {
+        Optional<Quiz> quizOpt = quizService.getQuizById(quizId);
+        if (quizOpt.isEmpty()) {
+            model.addAttribute("errorMessage", "Quiz not found!");
+            return "error_page";
+        }
+
+        Quiz quiz = quizOpt.get();
+        List<Question> questions = quiz.getQuestions();
+
+        session.setAttribute("currentQuiz", quiz);
+        session.setAttribute("questions", questions);
+        session.setAttribute("currentQuestionIndex", 0);
+        session.setAttribute("score", 0);
+
+        return "redirect:/quizzes/play/" + quizId + "/question/0";
+    }
+
+    // Show the current question
+    // Show the current question
+    @GetMapping("/quizzes/play/{quizId}/question/{index}")
+    public String showQuestion(@PathVariable("quizId") Long quizId,
+                               @PathVariable("index") int index,
+                               HttpSession session,
+                               Model model) {
+        // Retrieve quiz and questions from session
+        Quiz quiz = (Quiz) session.getAttribute("currentQuiz");
+        List<Question> questions = (List<Question>) session.getAttribute("questions");
+
+        // Handle missing quiz or question data
+        if (quiz == null || questions == null) {
+            model.addAttribute("errorMessage", "Quiz data is missing. Please restart the quiz.");
+            return "error_page";
+        }
+
+        // Handle invalid index
+        if (index < 0 || index >= questions.size()) {
+            model.addAttribute("errorMessage", "Invalid question index.");
+            return "error_page";
+        }
+
+        // Retrieve the current question
+        Question question = questions.get(index);
+
+        // Add necessary attributes for rendering the question
+        model.addAttribute("question", question); // Correctly add the current question
+        model.addAttribute("quiz", quiz);
+        model.addAttribute("currentQuestion", question);
+        model.addAttribute("currentQuestionIndex", index); // Ensure this matches Thymeleaf expectations
+        model.addAttribute("totalQuestions", questions.size());
+
+        // Return the quiz question view
+        return "quizQuestion";
+    }
+
+    // Submit an answer and navigate to the next question
+    @PostMapping("/quizzes/play/{quizId}/question/{index}/submit")
+    public String submitAnswer(@PathVariable("quizId") Long quizId,
+                               @PathVariable("index") int index,
+                               @RequestParam("answer") String answer,
+                               HttpSession session,
+                               Model model) {
+        // Retrieve session data
+        List<Question> questions = (List<Question>) session.getAttribute("questions");
+        int score = (int) session.getAttribute("score");
+
+        if (questions == null || index < 0 || index >= questions.size()) {
+            return "redirect:/viewAllQuizzes";
+        }
+
+        Question question = questions.get(index);
+
+        // Check if the answer is correct
+        if (answer.equalsIgnoreCase(question.getCorrectAnswer())) {
+            score++;
+            session.setAttribute("score", score);
+            model.addAttribute("feedbackMessage", "Correct!");
+        } else {
+            model.addAttribute("feedbackMessage", "Incorrect! The correct answer was: " + question.getCorrectAnswer());
+        }
+
+        // Navigate to the next question or complete the quiz
+        int nextIndex = index + 1;
+        if (nextIndex < questions.size()) {
+            return "redirect:/quizzes/play/" + quizId + "/question/" + nextIndex;
+        } else {
+            return "redirect:/quizzes/play/" + quizId + "/complete";
+        }
+    }
+
+    // Complete the quiz and display the final score
+    @GetMapping("/quizzes/play/{quizId}/complete")
+    public String completeQuiz(@PathVariable("quizId") Long quizId, HttpSession session, Model model) {
+        // Retrieve final score
+        int finalScore = (int) session.getAttribute("score");
+        List<Question> questions = (List<Question>) session.getAttribute("questions");
+
+        model.addAttribute("finalScore", finalScore);
+        model.addAttribute("totalQuestions", questions != null ? questions.size() : 0);
+
+        session.removeAttribute("currentQuiz");
+        session.removeAttribute("questions");
+        session.removeAttribute("currentQuestionIndex");
+        session.removeAttribute("score");
+
+        return "quizComplete"; // Return the quiz completion view
     }
 }

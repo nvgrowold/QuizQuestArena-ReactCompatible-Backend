@@ -3,6 +3,7 @@ package com.example.QuizQuestArena_Backend.dto;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -30,4 +31,7 @@ public class QuizDTO {
 //    @NotNull(message = "End date is required.")
 //    @Future(message = "End date must be in the future.")
     private LocalDateTime endDate;
+
+    //for start quiz
+    private List<QuestionDTO> questions;
 }
