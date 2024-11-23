@@ -2,14 +2,13 @@ package com.example.QuizQuestArena_Backend.service;
 
 import com.example.QuizQuestArena_Backend.db.QuestionRepo;
 import com.example.QuizQuestArena_Backend.db.QuizRepo;
+import com.example.QuizQuestArena_Backend.db.ScoreRepo;
+import com.example.QuizQuestArena_Backend.db.UserRepo;
 import com.example.QuizQuestArena_Backend.dto.QuestionDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
-import com.example.QuizQuestArena_Backend.model.Options;
-import com.example.QuizQuestArena_Backend.model.OpenTDBQuestion;
-import com.example.QuizQuestArena_Backend.model.OpenTDBResponse;
-import com.example.QuizQuestArena_Backend.model.Question;
-import com.example.QuizQuestArena_Backend.model.Quiz;
+import com.example.QuizQuestArena_Backend.model.*;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +32,11 @@ public class QuizService {
     private QuizRepo quizRepo;
     @Autowired
     private QuestionRepo questionRepo;
+    @Autowired
+    private UserRepo userRepo;
+
+    @Autowired
+    private ScoreRepo scoreRepo;
 
     //used for making HTTP requests to external APIs.
     private final RestTemplate restTemplate = new RestTemplate();
@@ -329,5 +333,37 @@ public class QuizService {
         quiz.setLikes(quiz.getLikes() + 1);
         return quizRepo.save(quiz);
     }
+
+    //save user score and add to participants of the quiz after completion of quiz
+    @Transactional
+    public void saveUserScore(Long quizId, Long userId, int scoreValue) {
+        Quiz quiz = quizRepo.findById(quizId).orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+        PlayerUser user = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Save score
+        Score score = new Score();
+        score.setScore(scoreValue);
+        score.setCompletedDate(LocalDateTime.now());
+        score.setQuiz(quiz);
+        score.setPlayer(user);
+
+        scoreRepo.save(score);
+
+        // Update user's total score
+        user.setScore(user.getScore() + scoreValue);
+        userRepo.save(user);
+
+        // Add the user to quiz participants if not already added
+        if (!quiz.getParticipants().contains(user)) {
+            quiz.getParticipants().add(user);
+            quizRepo.save(quiz);
+        }
+    }
+
+    public Quiz saveQuiz(Quiz quiz) {
+        return quizRepo.save(quiz);
+    }
+
 
 }

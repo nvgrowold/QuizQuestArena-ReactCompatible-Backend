@@ -35,8 +35,8 @@ public class Quiz {
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Score> scores; // Relationship to Score
 
-    @ManyToMany(mappedBy = "participatedQuizzes",fetch = FetchType.LAZY)
-    private List<PlayerUser> participants; // Users who participated
+    @ManyToMany(mappedBy = "participatedQuizzes",fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<PlayerUser> participants = new ArrayList<>(); // Users who participated
 
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Question> questions = new ArrayList<>();; // Add this to map questions to the quiz

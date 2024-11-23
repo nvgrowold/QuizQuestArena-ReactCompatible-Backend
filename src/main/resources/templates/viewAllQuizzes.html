@@ -36,7 +36,7 @@
         <td th:text="${quiz.startDate}"></td>
         <td th:text="${quiz.endDate}"></td>
         <td th:text="${quiz.likes}"></td>
-        <td th:text="${quiz.participants.size()}"></td>
+        <td th:text="${quiz.participants.size()}">0</td>
         <td>
             <form th:action="@{/quizzes/join}" method="post">
                 <input type="hidden" name="quizId" th:value="${quiz.id}">

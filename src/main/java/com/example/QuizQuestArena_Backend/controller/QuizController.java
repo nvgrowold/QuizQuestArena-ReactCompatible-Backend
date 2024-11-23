@@ -1,12 +1,10 @@
 package com.example.QuizQuestArena_Backend.controller;
 
+import com.example.QuizQuestArena_Backend.db.ScoreRepo;
 import com.example.QuizQuestArena_Backend.db.UserRepo;
 import com.example.QuizQuestArena_Backend.dto.QuizDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
-import com.example.QuizQuestArena_Backend.model.PlayerUser;
-import com.example.QuizQuestArena_Backend.model.Question;
-import com.example.QuizQuestArena_Backend.model.Quiz;
-import com.example.QuizQuestArena_Backend.model.QuizFeedback;
+import com.example.QuizQuestArena_Backend.model.*;
 import com.example.QuizQuestArena_Backend.service.NewQuizNotificationService;
 import com.example.QuizQuestArena_Backend.service.QuizService;
 import jakarta.servlet.http.HttpSession;
@@ -41,6 +39,10 @@ public class QuizController {
 
     @Autowired
     private NewQuizNotificationService newQuizNotificationService;
+
+    @Autowired
+    private ScoreRepo scoreRepo;
+
 
     LocalDateTime completedDate = LocalDateTime.now(); // Get the current date and time
 
@@ -321,6 +323,7 @@ public class QuizController {
     // Complete the quiz and display the final score
     @GetMapping("/quizzes/play/{quizId}/complete")
     public String completeQuiz(@PathVariable("quizId") Long quizId, HttpSession session, Model model) {
+
         // Retrieve final score
         int finalScore = (int) session.getAttribute("score");
         List<Question> questions = (List<Question>) session.getAttribute("questions");
@@ -340,6 +343,33 @@ public class QuizController {
                     question.getPlayerAnswer().equalsIgnoreCase(question.getCorrectAnswer()));
             return feedback;
         }).toList();
+
+        // Retrieve user ID from session
+        Long userId = (Long) session.getAttribute("userId");
+        if (userId == null) {
+            return "redirect:/login"; // Redirect to login if session is invalid
+        }
+
+        // Fetch the quiz
+        Quiz quiz = quizService.getQuizById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+        // Fetch the player and add to participants list
+        PlayerUser user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (!quiz.getParticipants().contains(user)) {
+            quiz.getParticipants().add(user);
+            quizService.saveQuiz(quiz); // Save the updated quiz
+        }
+
+        // Save the player's score in the `Score` entity
+        Score score = new Score();
+        score.setScore(finalScore);
+        score.setCompletedDate(LocalDateTime.now());
+        score.setQuiz(quiz);
+        score.setPlayer(user);
+        scoreRepo.save(score); // Save the score
 
         model.addAttribute("finalScore", finalScore);
         model.addAttribute("totalQuestions", questions != null ? questions.size() : 0);
