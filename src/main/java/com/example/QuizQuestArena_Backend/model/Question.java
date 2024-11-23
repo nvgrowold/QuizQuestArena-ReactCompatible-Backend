@@ -20,6 +20,7 @@ public class Question {
     private String type; // Question type: multiple or boolean
     private String correctAnswer;
     private Integer questionIndex;
+    private String playerAnswer;
 
     //question options
     @OneToMany(mappedBy = "question", fetch = FetchType.EAGER, cascade = CascadeType.ALL,orphanRemoval = true)

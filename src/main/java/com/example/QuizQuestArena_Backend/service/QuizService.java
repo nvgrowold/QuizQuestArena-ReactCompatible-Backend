@@ -321,4 +321,16 @@ public class QuizService {
                     return dto;
                 });
     }
+
+    //like dislike option logic
+    public void updateQuizLikeDislike(Long quizId, boolean like) {
+        Quiz quiz = quizRepo.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+        if (like) {
+            quiz.setLikes(quiz.getLikes() + 1);
+        }
+        quizRepo.save(quiz);
+    }
+
 }

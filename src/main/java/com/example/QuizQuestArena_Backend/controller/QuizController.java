@@ -255,6 +255,13 @@ public class QuizController {
         model.addAttribute("currentQuestionIndex", index); // Ensure this matches Thymeleaf expectations
         model.addAttribute("totalQuestions", questions.size());
 
+//        // Retrieve feedback message and clear it from session
+//        String feedbackMessage = (String) session.getAttribute("feedbackMessage");
+//        if (feedbackMessage != null) {
+//            model.addAttribute("feedbackMessage", feedbackMessage);
+//            session.removeAttribute("feedbackMessage");
+//        }
+
         // Return the quiz question view
         return "quizQuestion";
     }
@@ -268,30 +275,46 @@ public class QuizController {
                                Model model) {
         // Retrieve session data
         List<Question> questions = (List<Question>) session.getAttribute("questions");
+        Quiz quiz = (Quiz) session.getAttribute("currentQuiz"); // Retrieve the quiz object
         int score = (int) session.getAttribute("score");
 
         if (questions == null || index < 0 || index >= questions.size()) {
+            model.addAttribute("errorMessage", "Quiz data is missing or invalid.");
             return "redirect:/viewAllQuizzes";
         }
 
         Question question = questions.get(index);
+        // Save user's selected answer
+        question.setPlayerAnswer(answer);
 
         // Check if the answer is correct
+        String feedbackMessage;
         if (answer.equalsIgnoreCase(question.getCorrectAnswer())) {
             score++;
             session.setAttribute("score", score);
-            model.addAttribute("feedbackMessage", "Correct!");
+           // model.addAttribute("feedbackMessage", "Correct!");
+            feedbackMessage = "Correct";
         } else {
-            model.addAttribute("feedbackMessage", "Incorrect! The correct answer was: " + question.getCorrectAnswer());
+            feedbackMessage = "Incorrect! The correct answer was: " + question.getCorrectAnswer();
         }
 
-        // Navigate to the next question or complete the quiz
-        int nextIndex = index + 1;
-        if (nextIndex < questions.size()) {
-            return "redirect:/quizzes/play/" + quizId + "/question/" + nextIndex;
-        } else {
-            return "redirect:/quizzes/play/" + quizId + "/complete";
-        }
+//        // Navigate to the next question or complete the quiz
+//        int nextIndex = index + 1;
+//        if (nextIndex < questions.size()) {
+//            return "redirect:/quizzes/play/" + quizId + "/question/" + nextIndex;
+//        } else {
+//            return "redirect:/quizzes/play/" + quizId + "/complete";
+//        }
+
+        // Add attributes for the current question and feedback
+        model.addAttribute("quiz", quiz); // Ensure quiz is added
+        model.addAttribute("currentQuestion", question);
+        model.addAttribute("currentQuestionIndex", index);
+        model.addAttribute("totalQuestions", questions.size());
+        model.addAttribute("feedbackMessage", feedbackMessage);
+
+        // Stay on the current question
+        return "quizQuestion";
     }
 
     // Complete the quiz and display the final score
@@ -311,4 +334,15 @@ public class QuizController {
 
         return "quizComplete"; // Return the quiz completion view
     }
+
+    //like or dislike option endpoint
+    @PostMapping("/quizzes/like-dislike/{quizId}")
+    public String likeDislikeQuiz(@PathVariable("quizId") Long quizId,
+                                  @RequestParam("like") boolean like) {
+        // Update the quiz's like/dislike count
+        quizService.updateQuizLikeDislike(quizId, like);
+
+        return "redirect:/viewAllQuizzes";
+    }
+
 }
