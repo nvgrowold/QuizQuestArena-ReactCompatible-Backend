@@ -6,6 +6,7 @@ import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
 import com.example.QuizQuestArena_Backend.model.PlayerUser;
 import com.example.QuizQuestArena_Backend.model.Question;
 import com.example.QuizQuestArena_Backend.model.Quiz;
+import com.example.QuizQuestArena_Backend.model.QuizFeedback;
 import com.example.QuizQuestArena_Backend.service.NewQuizNotificationService;
 import com.example.QuizQuestArena_Backend.service.QuizService;
 import jakarta.servlet.http.HttpSession;
@@ -324,8 +325,25 @@ public class QuizController {
         int finalScore = (int) session.getAttribute("score");
         List<Question> questions = (List<Question>) session.getAttribute("questions");
 
+        if (questions == null || questions.isEmpty()) {
+            model.addAttribute("errorMessage", "No quiz data found. Please try again.");
+            return "error_page";
+        }
+
+        // Collect question details for feedback
+        List<QuizFeedback> feedbackList = questions.stream().map(question -> {
+            QuizFeedback feedback = new QuizFeedback();
+            feedback.setQuestion(question.getText());
+            feedback.setPlayerAnswer(question.getPlayerAnswer());
+            feedback.setCorrectAnswer(question.getCorrectAnswer());
+            feedback.setCorrect(question.getPlayerAnswer() != null &&
+                    question.getPlayerAnswer().equalsIgnoreCase(question.getCorrectAnswer()));
+            return feedback;
+        }).toList();
+
         model.addAttribute("finalScore", finalScore);
         model.addAttribute("totalQuestions", questions != null ? questions.size() : 0);
+        model.addAttribute("feedbackList", feedbackList);
 
         session.removeAttribute("currentQuiz");
         session.removeAttribute("questions");

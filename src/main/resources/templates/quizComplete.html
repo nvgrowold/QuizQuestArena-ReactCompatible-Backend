@@ -10,13 +10,24 @@
 <h2 th:text="'Your Score: ' + ${finalScore} + ' / ' + ${totalQuestions}"></h2>
 
 <h3>Review Your Answers:</h3>
-<ul>
-    <li th:each="question, iterStat : ${questions}">
-        <p>Question <span th:text="${iterStat.index + 1}"></span>: <span th:text="${question.text}"></span></p>
-        <p>Your Answer: <span th:text="${question.userAnswer}"></span></p>
-        <p>Correct Answer: <span th:text="${question.correctAnswer}"></span></p>
-    </li>
-</ul>
+<table>
+    <thead>
+    <tr>
+        <th>Question</th>
+        <th>Your Answer</th>
+        <th>Correct Answer</th>
+        <th>Result</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="feedback : ${feedbackList}">
+        <td th:text="${feedback.question}">Question</td>
+        <td th:text="${feedback.playerAnswer ?: 'No Answer'}">Your Answer</td>
+        <td th:text="${feedback.correctAnswer}">Correct Answer</td>
+        <td th:text="${feedback.correct ? 'Correct' : 'Incorrect'}">Result</td>
+    </tr>
+    </tbody>
+</table>
 
 <form th:action="@{/quizzes/like-dislike/{quizId}(quizId=${quizId})}" method="post">
     <p>Did you enjoy this quiz?</p>
