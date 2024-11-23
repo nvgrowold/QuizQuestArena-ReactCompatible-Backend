@@ -2,6 +2,7 @@ package com.example.QuizQuestArena_Backend.service;
 
 import com.example.QuizQuestArena_Backend.db.QuestionRepo;
 import com.example.QuizQuestArena_Backend.dto.QuestionDTO;
+import com.example.QuizQuestArena_Backend.model.OpenTDBQuestion;
 import com.example.QuizQuestArena_Backend.model.Options;
 import com.example.QuizQuestArena_Backend.model.Question;
 import jakarta.transaction.Transactional;
@@ -9,6 +10,7 @@ import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 

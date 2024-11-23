@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -37,6 +38,18 @@ public class Quiz {
     @ManyToMany(mappedBy = "participatedQuizzes",fetch = FetchType.LAZY)
     private List<PlayerUser> participants; // Users who participated
 
-    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Question> questions; // Add this to map questions to the quiz
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Question> questions = new ArrayList<>();; // Add this to map questions to the quiz
+
+    //Avoid Replacing the Collection
+    //Instead of replacing the questions list, update it in place. If you're setting a new list of questions, Hibernate treats the old list as orphaned and deletes it.
+    public void addQuestion(Question question) {
+        questions.add(question);
+        question.setQuiz(this); // Ensure the relationship is properly set
+    }
+    public void removeQuestion(Question question) {
+        questions.remove(question);
+        question.setQuiz(null); // Break the relationship
+    }
+
 }

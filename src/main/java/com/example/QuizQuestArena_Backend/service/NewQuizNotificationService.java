@@ -42,6 +42,7 @@ public class NewQuizNotificationService {
 
         // Send email to each user
         for (PlayerUser user : users) {
+            System.out.println("Sending notification for quiz: " + quiz.getId()+"To" + user.getEmail());
             emailService.sendHtmlEmail(user.getEmail(), subject, htmlMessage);
             // Optionally, use sendEmail() if plain text is needed
             // emailService.sendEmail(user.getEmail(), subject, plainTextMessage);

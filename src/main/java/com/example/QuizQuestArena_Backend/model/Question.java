@@ -22,7 +22,7 @@ public class Question {
     private Integer questionIndex;
 
     //question options
-    @OneToMany(mappedBy = "question", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "question", fetch = FetchType.EAGER, cascade = CascadeType.ALL,orphanRemoval = true)
     private List<Options> options;
 
     @ManyToOne

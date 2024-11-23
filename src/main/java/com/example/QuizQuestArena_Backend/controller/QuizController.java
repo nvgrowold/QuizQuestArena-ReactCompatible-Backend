@@ -114,6 +114,7 @@ public class QuizController {
             Quiz quiz = quizService.createQuiz(quizDTO);
             // Send notification emails
             newQuizNotificationService.sendQuizCreatedEmail(quiz);
+            System.out.println("Email sent for quiz: " + quiz.getId());
 
             // Ensure user session is valid before redirecting
             Long userId = (Long) session.getAttribute("userId");

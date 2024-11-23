@@ -40,6 +40,8 @@ public class QuizService {
     //used for making HTTP requests to external APIs.
     private final RestTemplate restTemplate = new RestTemplate();
 
+    private NewQuizNotificationService newQuizNotificationService;
+
     /**
      * Fetches a list of quiz scores with details like player name, score, likes, etc.
      * data retrieved using a custom query in QuizRepo.
@@ -77,19 +79,62 @@ public class QuizService {
         quiz.setDifficulty(quizDTO.getDifficulty());
         quiz.setStartDate(quizDTO.getStartDate());
         quiz.setEndDate(quizDTO.getEndDate());
+        quiz.setLikes(0);
 
-        // Fetch 10 questions from OpenTDB based on the selected category and difficulty.
-        List<Question> questions = fetchQuestions(quizDTO.getCategory(), quizDTO.getDifficulty());
-        // Save the quiz to the database.
-        quizRepo.save(quiz);
+        // Step 1: Save the Quiz entity first
+        System.out.println("Saving quiz:" + quiz);
 
-        // Save questions and associate them with the quiz
-        for (Question question : questions) {
-            question.setQuiz(quiz);
-            questionRepo.save(question);
+        Quiz savedQuiz = quizRepo.save(quiz);
+
+        System.out.println("Saved quiz with ID:" + savedQuiz.getId());
+        if (savedQuiz.getId() == null) {
+            throw new RuntimeException("SavedQuiz ID is null!");
         }
 
-        return quiz;
+        try {
+            // Step 2: Fetch and map questions
+            // Fetch 10 questions from OpenTDB based on the selected category and difficulty.
+            List<Question> questions = fetchQuestions(quizDTO.getCategory(), quizDTO.getDifficulty());
+            System.out.println("Fetched Questions: " + questions.size());
+            //debug
+            if (questions.isEmpty()) {
+                throw new RuntimeException("No questions fetched for the quiz.");
+            }
+            System.out.println("Questions fetched: " + questions.size());
+            for (Question question : questions) {
+                System.out.println("Question Text: " + question.getText());
+            }
+
+
+            // Step 3: Clear existing questions (if any) and add new ones
+            //Avoid Detached Collections
+            //Ensure that the questions list in the Quiz entity is initialized and properly managed. If you replace the questions list with a new list (e.g., using savedQuiz.setQuestions(questions)), Hibernate may treat the old list as detached and trigger the error.
+            savedQuiz.getQuestions().clear(); // Clear the existing list
+            // Link questions to the saved quiz
+            for (Question question : questions) {
+                question.setQuiz(savedQuiz); // Ensure the relationship is established
+                savedQuiz.getQuestions().add(question); // Maintain the bidirectional relationship
+                if (question.getQuiz() == null) {
+                    //throw new RuntimeException("Question not linked to Quiz!");
+                    throw new RuntimeException("Quiz not set for question: " + question.getText());
+                }
+                System.out.println("*********Question before saving: " + question.getText() + ", Quiz ID: " + question.getQuiz().getId());
+                System.out.println("*************Question Text: " + question.getText());
+                System.out.println("***************Linked Quiz ID: " + (question.getQuiz() != null ? question.getQuiz().getId() : "null"));
+            }
+
+            // Step 4: Save questions.
+            questionRepo.saveAll(questions);
+
+            // Step 5: Save the updated quiz with questions
+            quizRepo.save(savedQuiz);
+
+            return savedQuiz;
+
+        }catch (Exception e){
+            System.err.println("Error during quiz creation: " + e.getMessage());
+            throw e; // Re-throw for further debugging
+        }
     }
 
     /**
@@ -128,15 +173,34 @@ public class QuizService {
     /**
      * Maps a list of OpenTDBQuestion objects to a list of Question entities.
      *
-     * @param openTDBQuestions List of questions fetched from OpenTDB API.
+     * @param openTDBQuestions List of questions and options and answers fetched from OpenTDB API.
      * @return A list of Question entities.
      */
     private List<Question> mapQuestions(List<OpenTDBQuestion> openTDBQuestions) {
         List<Question> questions = new ArrayList<>();
         for (OpenTDBQuestion openTDBQuestion : openTDBQuestions) {
             Question question = new Question();
-            question.setText(openTDBQuestion.getQuestion());// Map question text.
-            question.setType(openTDBQuestion.getType()); // Map question type (e.g., multiple-choice, true/false).
+            question.setText(openTDBQuestion.getQuestion());
+            question.setType(openTDBQuestion.getType());
+            question.setCorrectAnswer(openTDBQuestion.getCorrect_answer()); // Map correct answer
+
+            // Map options (correct and incorrect answers)
+            List<Options> options = new ArrayList<>();
+            // Add correct answer as an option
+            Options correctOption = new Options();
+            correctOption.setOptionText(openTDBQuestion.getCorrect_answer());
+            correctOption.setQuestion(question); // **Set the question reference in Option**
+            options.add(correctOption);
+
+            // Add incorrect answers as options
+            for (String incorrect : openTDBQuestion.getIncorrect_answers()) {
+                Options incorrectOption = new Options();
+                incorrectOption.setOptionText(incorrect);
+                incorrectOption.setQuestion(question);// **Set the question reference in Option**
+                options.add(incorrectOption);
+            }
+
+            question.setOptions(options); // Set options in question
             questions.add(question);
         }
         return questions;
@@ -211,7 +275,21 @@ public class QuizService {
 
     //--------------ongoing quiz function-------------------------------
     public Optional<Quiz> getQuizById(Long quizId) {
-        return quizRepo.findByIdWithQuestions(quizId);
+       // return quizRepo.findByIdWithQuestions(quizId);
+        Optional<Quiz> quizOpt = quizRepo.findByIdWithQuestions(quizId);
+        if (quizOpt.isPresent()) {
+            Quiz quiz = quizOpt.get();
+            //debug fetching logic
+            for (Question question : quiz.getQuestions()) {
+                System.out.println("Question: " + question.getText());
+                System.out.println("Correct Answer: " + question.getCorrectAnswer());
+                System.out.println("Options: ");
+                for (Options option : question.getOptions()) {
+                    System.out.println(" - " + option.getOptionText());
+                }
+            }
+        }
+        return quizOpt;
     }
 
     /**
@@ -226,15 +304,20 @@ public class QuizService {
                     QuizDTO dto = new QuizDTO();
                     dto.setId(quiz.getId());
                     dto.setName(quiz.getName());
-                    dto.setQuestions(quiz.getQuestions().stream()
+                    dto.setQuestions(quiz.getQuestions()  != null
+                            ? quiz.getQuestions().stream()
                             .map(q -> new QuestionDTO(
                                     q.getId(),
                                     q.getText(),
-                                    q.getOptions().stream()
+                                    q.getOptions()  != null
+                                            ? q.getOptions().stream()
                                         .map(Options::getOptionText) // Convert List<Options> to List<String>
-                            .collect(Collectors.toList())
+                                        .collect(Collectors.toList())
+                                            : List.of() // Empty list if options are null
                             ))
-                            .collect(Collectors.toList()));
+                            .collect(Collectors.toList())
+                            : List.of()
+                    );// Empty list if questions are null
                     return dto;
                 });
     }
