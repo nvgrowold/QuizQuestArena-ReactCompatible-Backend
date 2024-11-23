@@ -355,12 +355,9 @@ public class QuizController {
 
     //like or dislike option endpoint
     @PostMapping("/quizzes/like-dislike/{quizId}")
-    public String likeDislikeQuiz(@PathVariable("quizId") Long quizId,
-                                  @RequestParam("like") boolean like) {
-        // Update the quiz's like/dislike count
-        quizService.updateQuizLikeDislike(quizId, like);
-
-        return "redirect:/viewAllQuizzes";
+    public ResponseEntity<Integer> likeQuiz(@PathVariable Long quizId) {
+        Quiz updatedQuiz = quizService.likeQuiz(quizId);
+        return ResponseEntity.ok(updatedQuiz.getLikes());
     }
 
 }

@@ -17,10 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -200,6 +197,9 @@ public class QuizService {
                 options.add(incorrectOption);
             }
 
+            // Shuffle options to randomize their order
+            Collections.shuffle(options);
+
             question.setOptions(options); // Set options in question
             questions.add(question);
         }
@@ -323,14 +323,11 @@ public class QuizService {
     }
 
     //like dislike option logic
-    public void updateQuizLikeDislike(Long quizId, boolean like) {
+    public Quiz likeQuiz(Long quizId) {
         Quiz quiz = quizRepo.findById(quizId)
                 .orElseThrow(() -> new RuntimeException("Quiz not found"));
-
-        if (like) {
-            quiz.setLikes(quiz.getLikes() + 1);
-        }
-        quizRepo.save(quiz);
+        quiz.setLikes(quiz.getLikes() + 1);
+        return quizRepo.save(quiz);
     }
 
 }
