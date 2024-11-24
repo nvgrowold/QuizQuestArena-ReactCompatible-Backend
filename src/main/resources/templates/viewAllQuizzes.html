@@ -38,10 +38,7 @@
         <td th:text="${quiz.likes}"></td>
         <td th:text="${quiz.participants.size()}"></td>
         <td>
-            <form th:action="@{/quizzes/join}" method="post">
-                <input type="hidden" name="quizId" th:value="${quiz.id}">
-                <button type="submit">Join</button>
-            </form>
+            <a th:href="@{/quizzes/play/{quizId}(quizId=${quiz.id})}" class="join-button">Join</a>
         </td>
     </tr>
     </tbody>
