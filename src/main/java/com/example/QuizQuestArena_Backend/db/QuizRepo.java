@@ -24,7 +24,7 @@ public interface QuizRepo extends JpaRepository<Quiz, Long> {
     @Query("SELECT new com.example.QuizQuestArena_Backend.dto.QuizScoreDTO(" +
             "q.id, " +                  // Quiz ID
             "q.name, " +                // The name of the quiz
-            "COUNT(s.player.id), " +    // Total number of players who participated
+            "(SELECT COUNT(DISTINCT sp.player.id) FROM Score sp WHERE sp.quiz.id = q.id), " +  // Total number of players
             "AVG(s.score), " +          // Average score for the quiz
             "q.likes, " +               // Number of likes the quiz received
             "p.id, " +                  // Player ID
