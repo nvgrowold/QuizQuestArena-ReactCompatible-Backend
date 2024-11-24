@@ -46,7 +46,7 @@ public class PlayerUser {
             joinColumns = @JoinColumn(name = "player_id"),
             inverseJoinColumns = @JoinColumn(name = "quiz_id")
     )
-    private List<Quiz> participatedQuizzes = new ArrayList<>(); // quizzes this user participated
+    private List<Quiz> participatedQuizzes; // quizzes this user participated
 
     // Custom constructor matching the fields in mapToEntity
     public PlayerUser(Long id, String username, String password, String firstName, String lastName,
