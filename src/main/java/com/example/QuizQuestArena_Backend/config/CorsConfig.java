@@ -10,14 +10,14 @@ public class CorsConfig { //Cross-Origin Resource Sharing
 
     @Bean //this annotation returns a Spring-managed bean. Here it returns a WeMvcConfigurer object to configure CORS mappings
     public WebMvcConfigurer corsConfigurer(){ //WeMvcConfigurer Interface: define custom CORS mappings
-        return new WebMvcConfigurer(){
+        return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) { //customize how this app interacts with requests from different origions
                 registry.addMapping("/**") //Allows CORS for all endpoints in the app
                         .allowedMethods("GET","POST","PUT","DELETE") //specifies the allowed HTTP methods for cross-origin request
                         .allowedHeaders("*") //allows all headers in CORS request
-                        .allowedOrigins("*");
-
+                        .allowedOrigins("http://localhost:3000") // Explicitly specify the frontend origin
+                        .allowCredentials(true); // Allow credentials (cookies, sessions, etc.)
             }
         };
     }
