@@ -4,10 +4,8 @@ import com.example.QuizQuestArena_Backend.db.UserRepo;
 import com.example.QuizQuestArena_Backend.dto.UserDTO;
 import com.example.QuizQuestArena_Backend.model.PlayerUser;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.servlet.http.HttpSession; // Import for HttpSession
@@ -17,56 +15,51 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-@Controller
+@RestController
+@RequestMapping("/api/users") // Base path for user-related endpoints
 public class UserController {
 
     @Autowired
     private UserRepo userRepo;
 
-    //methods to redirect user to a specfic page after success logged in
-    //register page
-    @GetMapping("/register")
-    public String getRegisterPage(){
-        return "register_page";
-    }
+//    //methods to redirect user to a specfic page after success logged in
+//    //register page
+//    @GetMapping("/register")
+//    public String getRegisterPage(){
+//        return "register_page";
+//    }
 
 
     // Handle registration
     @PostMapping("/register")
-    public String registerPlayer(@Validated @ModelAttribute UserDTO userDTO,
-                                 BindingResult result, Model model) {
-
-        // Check for validation errors
-        if (result.hasErrors()) {
-            model.addAttribute("errorMessage", "Validation errors occurred.");
-            return "register_page";
-        }
-
+    public ResponseEntity<?> registerPlayer(
+//            @RequestPart("profilePicture") MultipartFile profilePicture, // Handle file
+            @RequestBody UserDTO userDTO) {                     // Handle other fields
         try {
+
+//            // Process file upload
+//            String profilePictureUrl = null;
+//            if (profilePicture != null && !profilePicture.isEmpty()) {
+//                profilePictureUrl = saveProfilePicture(profilePicture);
+//            }
+
+//            // Map DTO to entity
+            PlayerUser playerUser = mapToEntity(userDTO);
+//            playerUser.setProfilePicture(profilePictureUrl); // Set file path
+
             // Check if username already exists
             Optional<PlayerUser> existingUser = userRepo.findByUsername(userDTO.getUsername());
             if (existingUser.isPresent()) {
-                model.addAttribute("errorMessage", "User with the same username already exists!");
-                return "register_page";
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("User with the same username already exists!");
             }
 
-            // Handle profile picture if provided
-            String profilePictureUrl = null;
-            if (userDTO.getProfilePicture() != null && !userDTO.getProfilePicture().isEmpty()) {
-                profilePictureUrl = saveProfilePicture(userDTO.getProfilePicture());
-            }
-
-            // Map DTO to entity and save
-            PlayerUser playerUser = mapToEntity(userDTO);
-            playerUser.setProfilePicture(profilePictureUrl); // Set the URL or leave null
             userRepo.save(playerUser);
 
-            model.addAttribute("successMessage", "Registration successful! Please log in.");
-            return "login_page";
-
+            return ResponseEntity.status(HttpStatus.CREATED).body("Registration successful!");
         } catch (Exception e) {
-            model.addAttribute("errorMessage", "An error occurred during registration: " + e.getMessage());
-            return "register_page";
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred during registration: " + e.getMessage());
         }
     }
 
@@ -87,15 +80,15 @@ public class UserController {
         return filePath.toString();
     }
 
-    //login page
-    @GetMapping("/login")
-    public String getLoginPage(){
-        return "login_page";
-    }
+//    //login page
+//    @GetMapping("/login")
+//    public String getLoginPage(){
+//        return "login_page";
+//    }
 
     //handle login requests
     @PostMapping("/login")
-    public String loginPlayer(@ModelAttribute UserDTO userDTO, Model model, HttpSession session) {
+    public ResponseEntity<?> loginPlayer(@RequestBody UserDTO userDTO, HttpSession session) {
         System.out.println("Attempting login for username: " + userDTO.getUsername());
 
         //search and compare in the database for the username and password
@@ -106,14 +99,13 @@ public class UserController {
             PlayerUser user = authenticatedUser.get();
             session.setAttribute("userId", user.getId()); // Store userId in session
            // model.addAttribute("successMessage", "Login Successful!"); // Add success message
-            model.addAttribute("playerUser", mapToDTO(user));
             System.out.println("Login successful for user: " + userDTO.getUsername());
-            return "redirect:/userProfile"; // User ID is stored in session
+            return ResponseEntity.ok(mapToDTO(user)); // Return user details
         } else {
-            model.addAttribute("errorMessage", "Invalid login or password!");
             System.out.println("Session is null or expired. Redirecting to login.");
             System.out.println("Login failed for user: " + userDTO.getUsername());
-            return "redirect:/login";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid username or password!");
         }
     }
 
@@ -153,35 +145,33 @@ public class UserController {
     //update user profile function____________________________________________
     // Display user profile
     @GetMapping("/userProfile")
-    public String getUserProfile(HttpSession session, Model model) {
+    public ResponseEntity<?> getUserProfile(HttpSession session) {
         Long userId = (Long) session.getAttribute("userId"); //get user id during valid session
         System.out.println("Retrieved userId from session: " + userId);
         if (userId == null) {
-            return "redirect:/login"; // Redirect to login if no session
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("No active session. Please log in.");
         }
 
         //search user by id in the database
         Optional<PlayerUser> userOptional = userRepo.findById(userId);
         if (userOptional.isPresent()) {
             PlayerUser user = userOptional.get();
-            model.addAttribute("playerUser", mapToDTO(user));
-
             System.out.println("PlayerUser object: " + user);
-
-            // Redirect based on user role
-            return "ROLE_ADMIN".equals(user.getRole()) ? "adminProfile" : "userProfile";
+            return ResponseEntity.ok(mapToDTO(user)); // Return user profile
+        }else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("User not found!");
         }
-        model.addAttribute("errorMessage", "User not found!");
-        return "error_page";
     }
 
     @GetMapping("/adminProfile")
-    public String adminProfile(HttpSession session, Model model) {
+    public  ResponseEntity<?> adminProfile(HttpSession session) {
         Long userId = (Long) session.getAttribute("userId"); // Fetch user ID from the session
         System.out.println("Retrieved userId from session: " + userId);
         if (userId == null) {
-            model.addAttribute("errorMessage", "No active session. Please log in.");
-            return "redirect:/login"; // Redirect to login if no session
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("No active session. Please log in.");
         }
 
         // Fetch the user from the database
@@ -190,54 +180,64 @@ public class UserController {
         if (userOptional.isPresent()) {
             PlayerUser user = userOptional.get();
             System.out.println("User found: " + user);
-            model.addAttribute("playerUser", user); // Add user to the model
-
-            // Add debug log to check if the object is added to the model
-            System.out.println("AdminUser in adminProfile: " + user);
-            return "adminProfile"; // Return the adminProfile view
+            if ("ROLE_ADMIN".equals(user.getRole())) {
+                return ResponseEntity.ok(mapToDTO(user));
+            } else {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body("Access denied: Not an admin user.");
+            }
         } else {
-            model.addAttribute("errorMessage", "User not found!");
-            return "error_page"; // Handle the case where the user is not found
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("User not found!");
         }
     }
 
     // Update user profile
-    @PostMapping("/updateProfile/{id}")
-    public String updateUserProfile(@PathVariable("id") Long id, @ModelAttribute UserDTO userDTO, Model model) {
-        Optional<PlayerUser> existingUser = userRepo.findById(userDTO.getId());
+    // Update user profile
+    @PostMapping("/{id}")
+    public ResponseEntity<?> updateUserProfile(
+            @PathVariable("id") Long id,
+            @RequestPart("user") UserDTO userDTO, // User data as JSON
+            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture // Profile picture upload
+    ) {
+        Optional<PlayerUser> existingUser = userRepo.findById(id);
         if (existingUser.isPresent()) {
             PlayerUser user = existingUser.get();
+
             // Update editable fields
             user.setFirstName(userDTO.getFirstName());
             user.setLastName(userDTO.getLastName());
             user.setEmail(userDTO.getEmail());
             user.setPhoneNumber(userDTO.getPhoneNumber());
             user.setAddress(userDTO.getAddress());
-            //user.setRole(userDTO.getRole());
+            // user.setRole(userDTO.getRole());
+
+            try {
+                if (profilePicture != null && !profilePicture.isEmpty()) {
+                    // Save new profile picture and update the user's profilePicture field
+                    String profilePictureUrl = saveProfilePicture(profilePicture);
+                    user.setProfilePicture(profilePictureUrl);
+                }
+            } catch (Exception e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Error saving profile picture: " + e.getMessage());
+            }
 
             userRepo.save(user); // Save updated user
-            model.addAttribute("successMessage", "Profile updated successfully!");
-            model.addAttribute("playerUser", user);
-            // Redirect based on role
-            if ("ROLE_ADMIN".equals(user.getRole())) {
-                return "redirect:/adminProfile?userId=" + user.getId();
-            } else {
-                return "redirect:/userProfile?userId=" + user.getId();
-            }
+            return ResponseEntity.ok("Profile updated successfully!");
         } else {
-            model.addAttribute("errorMessage", "User not found!");
-            return "error_page";
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("User not found!");
         }
     }
 
+
     //logout from userprofile page
     @GetMapping("/logout")
-    public String logoutUser(HttpSession session) {
+    public ResponseEntity<?> logoutUser(HttpSession session) {
         // Invalidate session or perform logout logic here
-        if (session != null) {
-            session.invalidate(); // Invalidate the user's session
-        }
-        return "redirect:/"; // Redirect to the home page
+        session.invalidate(); //invalidate user's session
+        return ResponseEntity.ok("Logged out successfully!");
     }
 
 }

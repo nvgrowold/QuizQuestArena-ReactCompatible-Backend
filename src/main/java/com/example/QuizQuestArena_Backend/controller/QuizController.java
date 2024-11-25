@@ -27,7 +27,7 @@ import java.util.Optional;
  * Controller class for managing quiz-related endpoints.
  * Handles incoming HTTP requests related to quizzes and delegates to QuizService.
  */
-@Controller// Use @Controller to enable HTML view rendering, don't use @RestController
+@RestController// Use @Controller to enable HTML view rendering, don't use @RestController
 //@RequestMapping("/admin") //admin input submit create quiz  request
 @RequestMapping
 public class QuizController {
@@ -66,7 +66,7 @@ public class QuizController {
 //        //return "quizScoresPage"; // Must match the name of the HTML file in the templates directory
 //    }
 
-    @GetMapping("/quizScoresPage")
+    @GetMapping("/quizScores-Page")
     public String getQuizScoresPage(Model model) {
 
 //        // Temporary mock data
@@ -97,8 +97,8 @@ public class QuizController {
         // Add scores to the model so they can be accessed in the Thymeleaf template
         model.addAttribute("scores", scores);
 
-        // Return the name of the HTML template (Thymeleaf will map this to quizScoresPage.html)
-        return "quizScoresPage";
+        // Return the name of the HTML template (Thymeleaf will map this to quizScores-Page.html)
+        return "quizScores-Page";
     }
 
     @GetMapping("/create-quiz")

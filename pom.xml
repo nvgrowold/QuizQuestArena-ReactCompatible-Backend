@@ -63,12 +63,6 @@
 			<scope>test</scope>
 		</dependency>
 
-<!--&lt;!&ndash;		for load html page&ndash;&gt;-->
-<!--		<dependency>-->
-<!--			<groupId>org.springframework.boot</groupId>-->
-<!--			<artifactId>spring-boot-starter-thymeleaf</artifactId>-->
-<!--		</dependency>-->
-
 <!--		for logout session out dependency-->
 		<dependency>
 			<groupId>jakarta.servlet</groupId>
