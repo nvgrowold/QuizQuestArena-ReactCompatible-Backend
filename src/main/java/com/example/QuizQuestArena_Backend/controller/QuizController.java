@@ -93,7 +93,6 @@ public class QuizController {
             System.out.println("Player Score: " + score.getPlayerScore());
             System.out.println("Total Players: " + score.getTotalPlayers());
         }
-
         // Add scores to the model so they can be accessed in the Thymeleaf template
         model.addAttribute("scores", scores);
 
