@@ -193,47 +193,41 @@ public class UserController {
     }
 
     // Update user profile
-    // Update user profile
-    @PostMapping("/{id}")
+    @PutMapping("/{id}")
     public ResponseEntity<?> updateUserProfile(
             @PathVariable("id") Long id,
-            @RequestPart("user") UserDTO userDTO, // User data as JSON
-            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture // Profile picture upload
-    ) {
-        Optional<PlayerUser> existingUser = userRepo.findById(id);
-        if (existingUser.isPresent()) {
-            PlayerUser user = existingUser.get();
+            @RequestBody UserDTO userDTO
+//            @RequestPart(value = "profilePicture", required = false) MultipartFile profilePicture
+   ) {
+        try {
+            Optional<PlayerUser> existingUser = userRepo.findById(id);
+            if (existingUser.isPresent()) {
+                PlayerUser user = existingUser.get();
 
-            // Update editable fields
-            user.setFirstName(userDTO.getFirstName());
-            user.setLastName(userDTO.getLastName());
-            user.setEmail(userDTO.getEmail());
-            user.setPhoneNumber(userDTO.getPhoneNumber());
-            user.setAddress(userDTO.getAddress());
-            // user.setRole(userDTO.getRole());
+                // Update editable fields
+                user.setFirstName(userDTO.getFirstName());
+                user.setLastName(userDTO.getLastName());
+                user.setEmail(userDTO.getEmail());
+                user.setPhoneNumber(userDTO.getPhoneNumber());
+                user.setAddress(userDTO.getAddress());
 
-            try {
-                if (profilePicture != null && !profilePicture.isEmpty()) {
-                    // Save new profile picture and update the user's profilePicture field
-                    String profilePictureUrl = saveProfilePicture(profilePicture);
-                    user.setProfilePicture(profilePictureUrl);
-                }
-            } catch (Exception e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body("Error saving profile picture: " + e.getMessage());
+                userRepo.save(user); // Save updated user
+                return ResponseEntity.ok("Profile updated successfully!");
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found!");
             }
-
-            userRepo.save(user); // Save updated user
-            return ResponseEntity.ok("Profile updated successfully!");
-        } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("User not found!");
+        } catch (Exception e) {
+            // Log exception stack trace
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred: " + e.getMessage());
         }
     }
 
 
+
     //logout from userprofile page
-    @GetMapping("/logout")
+    @PostMapping("/logout")
     public ResponseEntity<?> logoutUser(HttpSession session) {
         // Invalidate session or perform logout logic here
         session.invalidate(); //invalidate user's session
