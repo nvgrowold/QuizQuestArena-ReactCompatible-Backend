@@ -4,29 +4,34 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
 public class CustomErrorController implements ErrorController {
 
     @RequestMapping("/error")
-    public String handleError(HttpServletRequest request, Model model) {
+    public ResponseEntity<Map<String, String>> handleError(HttpServletRequest request) {
         Object status = request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-        String message = "Something went wrong!";
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Something went wrong!");
 
         if (status != null) {
             Integer statusCode = Integer.valueOf(status.toString());
             if (statusCode == HttpStatus.NOT_FOUND.value()) {
-                message = "Page not found!";
+                response.put("message", "Page not found!");
             } else if (statusCode == HttpStatus.INTERNAL_SERVER_ERROR.value()) {
-                message = "Internal server error!";
+                response.put("message", "Internal server error!");
             }
+                response.put("status", statusCode.toString());
+            } else {
+                response.put("status", "UNKNOWN");
+            }
+             return ResponseEntity.status((status != null) ? (Integer) status : HttpStatus.INTERNAL_SERVER_ERROR.value()).body(response);
         }
-
-        model.addAttribute("message", message);
-        return "error_page";
     }
-}
 
