@@ -4,15 +4,18 @@ import com.example.QuizQuestArena_Backend.db.PasswordResetRepo;
 import com.example.QuizQuestArena_Backend.model.PasswordReset;
 import com.example.QuizQuestArena_Backend.service.PasswordResetService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
-@Controller
-@RequestMapping("/password")
+@RestController
+@RequestMapping("/api/password")
 public class PasswordResetController {
 
     @Autowired
@@ -22,36 +25,40 @@ public class PasswordResetController {
     private PasswordResetRepo passwordResetRepo;
 
     @GetMapping("/password-reset")
-    public String showPasswordResetPage(Model model) {
+    public ResponseEntity<Map<String, String>> showPasswordResetPage() {
+        Map<String, String> response = new HashMap<>();
         // Reset messages before rendering the page
-        model.addAttribute("successMessage", null);
-        model.addAttribute("errorMessage", null);
-        return "passwordReset"; // matches thymeleaf template html name
+        response.put("message", "Reset password endpoint available.");
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/request-password-reset")
-    public String requestPasswordReset(@RequestParam("email") String email, Model model) {
+    public ResponseEntity<Map<String, String>> requestPasswordReset(@RequestBody Map<String, String> requestBody) {
+        String email = requestBody.get("email");
+        Map<String, String> response = new HashMap<>();
         try {
             //handle password reset logic
-            String response = passwordResetService.requestPasswordReset(email);
-            model.addAttribute("successMessage", response);
+            String result = passwordResetService.requestPasswordReset(email);
+            response.put("successMessage", result);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            model.addAttribute("errorMessage", "Failed to send password reset email. Please try again.");
+            response.put("errorMessage", "Failed to send password reset email. Please try again.");
+            return ResponseEntity.badRequest().body(response);
         }
-        return "passwordReset"; // Return same template with messages
     }
 
     //show password reset page after user click the link in the email
-    @GetMapping("/reset")
-    public String showResetPasswordForm(@RequestParam("token") String token, Model model) {
+    @GetMapping("/reset-password")
+    public ResponseEntity<Map<String, String>> showResetPasswordForm(@RequestParam("token") String token) {
+        Map<String, String> response = new HashMap<>();
         // Validate the token
-        String message;
         if (passwordResetService.isTokenValid(token)) {
-            model.addAttribute("token", token);
-            return "resetPasswordForm"; // Replace with the Thymeleaf template for password reset
+            response.put("token", token);
+            response.put("message", "Token is valid. Proceed with resetting your password.");
+            return ResponseEntity.ok(response);
         } else {
-            model.addAttribute("errorMessage", "Invalid or expired token.");
-            return "passwordResetError";
+            response.put("errorMessage", "Invalid or expired token.");
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
@@ -69,34 +76,36 @@ public class PasswordResetController {
 
     //Handle password reset form click submission
     @PostMapping("/reset-password")
-    public String resetPassword(@RequestParam("token") String token,
-                                @RequestParam("password") String password,
-                                @RequestParam("confirmPassword") String confirmPassword,
-                                Model model) {
+    public ResponseEntity<Map<String, String>> resetPassword(@RequestBody Map<String, String> requestBody) {
+        //accepting frontend to send new passwords and token as a RequestBody, rather than a Query Parameter
+        String token = requestBody.get("token");
+        String password = requestBody.get("password");
+        String confirmPassword = requestBody.get("confirmPassword");
+
+        Map<String, String> response = new HashMap<>();
         if (!password.equals(confirmPassword)) {
-            model.addAttribute("errorMessage", "Passwords do not match.");
-            model.addAttribute("token", token);
             System.out.println("Token: " + token);
             System.out.println("New Password: " + password);
             System.out.println("Confirm Password: " + confirmPassword);
 
-            return "resetPasswordForm";
+            response.put("errorMessage", "Passwords do not match.");
+            return ResponseEntity.badRequest().body(response);
         }
 
-        String response = passwordResetService.resetPassword(token, password);
-        if (response.equals("Password has been successfully reset.")) {
+        String result = passwordResetService.resetPassword(token, password);
+        if (result.equals("Password has been successfully reset.")) {
             System.out.println("Token: " + token);
             System.out.println("New Password: " + password);
             System.out.println("Confirm Password: " + confirmPassword);
 
-            return "redirect:/login";
+            response.put("successMessage", result);
+            return ResponseEntity.ok(response);
         } else {
             System.out.println("Token: " + token);
             System.out.println("New Password: " + password);
             System.out.println("Confirm Password: " + confirmPassword);
-            model.addAttribute("errorMessage", response);
-            model.addAttribute("token", token);
-            return "resetPasswordForm";
+            response.put("errorMessage", result);
+            return ResponseEntity.badRequest().body(response);
         }
 
     }

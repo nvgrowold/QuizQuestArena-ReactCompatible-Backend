@@ -41,8 +41,22 @@ public class PasswordResetService {
 
         PlayerUser user = userOptional.get();
 
+        // Check if there's an existing unexpired token for the email
+        Optional<PasswordReset> existingToken = passwordResetRepo.findByEmail(email);
+        if (existingToken.isPresent()) {
+            PasswordReset resetRequest = existingToken.get();
+            if (resetRequest.getExpiryDate().isAfter(LocalDateTime.now())) {
+                // If the token is still valid, resend the email with the same token
+                sendResetEmail(email, resetRequest.getToken());
+                return "Password reset instructions have been resent to your email.";
+            } else {
+                // If the token has expired, delete it
+                passwordResetRepo.delete(resetRequest);
+            }
+        }
+
         // Delete existing password reset tokens for this email to avoid duiplicated key generated
-        passwordResetRepo.deleteByEmail(email);
+       // passwordResetRepo.deleteByEmail(email);
 
         // Generate a unique reset token
         String token = UUID.randomUUID().toString();
@@ -69,13 +83,17 @@ public class PasswordResetService {
 
     /*Send the password reset email.*/
     private void sendResetEmail(String email, String token) {
-        String resetUrl = "http://localhost:8080/password/reset?token=" + token;
+        String resetUrl = "http://localhost:3000/reset-password?token=" + token;
         String subject = "Password Reset Request";
-        String content = "<p>Dear user,</p>"
-                + "<p>You have requested to reset your password. Click the link below to reset your password:</p>"
-                + "<p><a href=\"" + resetUrl + "\">Reset Password</a></p>"
-                + "<p>If you didn't request this, you can ignore this email.</p>"
-                + "<p>Note: This link will expire in 1 hour.</p>";
+        String content =  "<html>" +
+                "<body>" +
+                "<p>Dear user,</p>" +
+                "<p>You have requested to reset your password. Click the link below to reset your password:</p>" +
+                "<p><a href=\"" + resetUrl + "\">Reset Password</a></p>" +
+                "<p>If you didn't request this, you can ignore this email.</p>" +
+                "<p>Note: This link will expire in 1 hour.</p>" +
+                "</body>" +
+                "</html>";
 
         // Use EmailService to send the email
         emailService.sendHtmlEmail(email, subject, content);
@@ -132,9 +150,12 @@ public class PasswordResetService {
         Optional<PasswordReset> resetRequestOptional = passwordResetRepo.findByToken(token);
         if (resetRequestOptional.isPresent()) {
             PasswordReset resetRequest = resetRequestOptional.get();
-            return resetRequest.getExpiryDate().isAfter(LocalDateTime.now());
+            if (resetRequest.getExpiryDate().isBefore(LocalDateTime.now())) {
+                passwordResetRepo.delete(resetRequest); // Remove expired token
+                return false;
+            }
+            return true;
         }
         return false;
     }
-
 }
