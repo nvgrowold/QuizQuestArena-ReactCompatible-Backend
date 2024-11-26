@@ -2,10 +2,7 @@ package com.example.QuizQuestArena_Backend.dto;
 
 import com.example.QuizQuestArena_Backend.model.Options;
 import com.example.QuizQuestArena_Backend.model.Question;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.List;
 
@@ -16,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
 public class QuestionDTO {
     private Long id;
     private String text;

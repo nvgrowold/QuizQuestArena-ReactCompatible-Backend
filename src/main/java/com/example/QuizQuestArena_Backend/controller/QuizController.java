@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -29,7 +31,7 @@ import java.util.Optional;
  */
 @RestController// Use @Controller to enable HTML view rendering, don't use @RestController
 //@RequestMapping("/admin") //admin input submit create quiz  request
-@RequestMapping
+@RequestMapping("/api/quizzes")
 public class QuizController {
 
     @Autowired
@@ -66,8 +68,8 @@ public class QuizController {
 //        //return "quizScoresPage"; // Must match the name of the HTML file in the templates directory
 //    }
 
-    @GetMapping("/quizScores-Page")
-    public String getQuizScoresPage(Model model) {
+    @GetMapping("/quizScoresRanking")
+    public ResponseEntity<List<QuizScoreDTO>> getQuizScores() {
 
 //        // Temporary mock data
 //        List<QuizScoreDTO> scores = List.of(
@@ -93,28 +95,17 @@ public class QuizController {
             System.out.println("Player Score: " + score.getPlayerScore());
             System.out.println("Total Players: " + score.getTotalPlayers());
         }
-        // Add scores to the model so they can be accessed in the Thymeleaf template
-        model.addAttribute("scores", scores);
-
-        // Return the name of the HTML template (Thymeleaf will map this to quizScores-Page.html)
-        return "quizScores-Page";
+        return ResponseEntity.ok(scores);
     }
 
-    @GetMapping("/create-quiz")
-    public String getCreateQuizPage(Model model) {
-        model.addAttribute("quizDTO", new QuizDTO());
-        return "createQuiz";
-    }
+//    @GetMapping("/create-quiz")
+//    public String getCreateQuizPage(Model model) {
+//        model.addAttribute("quizDTO", new QuizDTO());
+//        return "createQuiz";
+//    }
 
-    @PostMapping("/create-quiz")
-     public String createQuiz(@ModelAttribute @Valid QuizDTO quizDTO, BindingResult bindingResult, HttpSession session, Model model) {
-//        if (bindingResult.hasErrors()) {
-//            // Add validation errors to the model for feedback
-//            model.addAttribute("errorMessage", "Validation errors occurred!");
-//            model.addAttribute("validationErrors", bindingResult.getFieldErrors());
-//            return "createQuiz"; // Return to the form view
-//        }
-
+    @PostMapping("/create")
+     public ResponseEntity<String> createQuiz(@RequestBody @Valid QuizDTO quizDTO, HttpSession session) {
         try {
             // Create the quiz
             Quiz quiz = quizService.createQuiz(quizDTO);
@@ -126,61 +117,66 @@ public class QuizController {
             Long userId = (Long) session.getAttribute("userId");
             System.out.println("UserId in session: " + userId);
             if (userId == null) {
-                return "redirect:/login"; // Redirect to login if session is invalid
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session expired. Please log in.");
             }
 
 
             // Fetch user and check role
             PlayerUser user = userRepo.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
-            if (user == null || !"ROLE_ADMIN".equals(user.getRole())) {
-                return "redirect:/userProfile"; // Redirect non-admins to userProfile
+            if (!"ROLE_ADMIN".equals(user.getRole())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied. Admins only.");
             }
 
-            // Add success message and direct to adminProfile
-            model.addAttribute("successMessage", "Quiz created successfully!");
-            return "redirect:/adminProfile?userId=" + userId;
+            return ResponseEntity.ok("Quiz created successfully.");
+
         } catch (Exception e) {
-            model.addAttribute("errorMessage", "Failed to create quiz: " + e.getMessage());
-            return "createQuiz"; // Return to the form view with an error
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to create quiz: " + e.getMessage());
         }
     }
 
-    @GetMapping("/manage-quizzes")
-    public String manageQuizzes(Model model) {
+    /**
+     * Fetch all quizzes for management.
+     */
+    @GetMapping("/manage")
+    public ResponseEntity<List<Quiz>> manageQuizzes() {
         List<Quiz> quizzes = quizService.getAllQuizzes();
-        model.addAttribute("quizzes", quizzes);
-        return "manageQuizzes"; // Thymeleaf template name
+        return ResponseEntity.ok(quizzes);
     }
 
-    @PostMapping("/update-quiz")
-    @ResponseBody
+    @PostMapping("/update")
     public ResponseEntity<String> updateQuiz(@RequestBody QuizDTO quizDTO) {
         try {
             quizService.updateQuiz(quizDTO);
-            return ResponseEntity.ok("success");
+            return ResponseEntity.ok("Quiz updated successfully.");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to update quiz: " + e.getMessage());
         }
     }
 
-    @PostMapping("/delete-quiz/{id}")
-    @ResponseBody
+    //delete by id
+    @PostMapping("/delete/{id}")
     public ResponseEntity<String> deleteQuiz(@PathVariable Long id) {
         try {
             quizService.deleteQuiz(id);
-            return ResponseEntity.ok("success");
+            return ResponseEntity.ok("Quiz deleted successfully");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("error");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Failed to delete quiz: " + e.getMessage());
         }
     }
 
+    /**
+     * View quizzes categorized as ongoing, upcoming, past, and participated.
+     */
     //endpoints for player user view all quizzes
     @GetMapping("/viewAllQuizzes")
-    public String viewAllQuizzes(HttpSession session, Model model) {
+    public ResponseEntity<?> viewAllQuizzes(HttpSession session) {
         Long userId = (Long) session.getAttribute("userId");
         if (userId == null) {
-            return "redirect:/login"; // Redirect to login if session is invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session expired. Please log in.");
         }
 
         // fetching quizzes by different types
@@ -195,26 +191,24 @@ public class QuizController {
         System.out.println("Fetched Past Quizzes: " + pastQuizzes.size());
         System.out.println("Fetched Participated Quizzes: " + participatedQuizzes.size());
 
-        // adding the fetched quizzes to model
-        // Model parameter is part of Spring MVC that acts as container
-        // for passing data between the controller and the view (HTML templates)
-        model.addAttribute("ongoingQuizzes", ongoingQuizzes);
-        model.addAttribute("upcomingQuizzes", upcomingQuizzes);
-        model.addAttribute("pastQuizzes", pastQuizzes);
-        model.addAttribute("participatedQuizzes", participatedQuizzes);
+        // Preparing response data
+        Map<String, Object> response = new HashMap<>();
+        response.put("ongoingQuizzes", ongoingQuizzes);
+        response.put("upcomingQuizzes", upcomingQuizzes);
+        response.put("pastQuizzes", pastQuizzes);
+        response.put("participatedQuizzes", participatedQuizzes);
 
-        return "viewAllQuizzes"; // Thymeleaf template name
+        return ResponseEntity.ok(response);
     }
 
 
     //----------------------Ongoing Quiz Functionality---------------------------------
     //start a quiz: display the first question of the quiz.
-    @GetMapping("/quizzes/play/{quizId}")
-    public String startQuiz(@PathVariable("quizId") Long quizId, HttpSession session, Model model) {
+    @GetMapping("/play/{quizId}")
+    public ResponseEntity<?> startQuiz(@PathVariable Long quizId, HttpSession session) {
         Optional<Quiz> quizOpt = quizService.getQuizById(quizId);
         if (quizOpt.isEmpty()) {
-            model.addAttribute("errorMessage", "Quiz not found!");
-            return "error_page";
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Quiz not found.");
         }
 
         Quiz quiz = quizOpt.get();
@@ -225,41 +219,33 @@ public class QuizController {
         session.setAttribute("currentQuestionIndex", 0);
         session.setAttribute("score", 0);
 
-        return "redirect:/quizzes/play/" + quizId + "/question/0";
+        return ResponseEntity.ok(quiz);
     }
 
     // Show the current question
     // Show the current question
-    @GetMapping("/quizzes/play/{quizId}/question/{index}")
-    public String showQuestion(@PathVariable("quizId") Long quizId,
-                               @PathVariable("index") int index,
-                               HttpSession session,
-                               Model model) {
+    @GetMapping("/play/{quizId}/question/{index}")
+    public ResponseEntity<?> showQuestion(@PathVariable Long quizId,
+                               @PathVariable int index,
+                               HttpSession session) {
         // Retrieve quiz and questions from session
         Quiz quiz = (Quiz) session.getAttribute("currentQuiz");
         List<Question> questions = (List<Question>) session.getAttribute("questions");
 
-        // Handle missing quiz or question data
-        if (quiz == null || questions == null) {
-            model.addAttribute("errorMessage", "Quiz data is missing. Please restart the quiz.");
-            return "error_page";
+        if (quiz == null || questions == null || index < 0 || index >= questions.size()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid quiz or question index.");
         }
 
-        // Handle invalid index
-        if (index < 0 || index >= questions.size()) {
-            model.addAttribute("errorMessage", "Invalid question index.");
-            return "error_page";
-        }
 
         // Retrieve the current question
         Question question = questions.get(index);
 
-        // Add necessary attributes for rendering the question
-        model.addAttribute("question", question); // Correctly add the current question
-        model.addAttribute("quiz", quiz);
-        model.addAttribute("currentQuestion", question);
-        model.addAttribute("currentQuestionIndex", index); // Ensure this matches Thymeleaf expectations
-        model.addAttribute("totalQuestions", questions.size());
+        // Preparing response
+        Map<String, Object> response = new HashMap<>();
+        response.put("quiz", quiz);
+        response.put("question", question);
+        response.put("currentQuestionIndex", index);
+        response.put("totalQuestions", questions.size());
 
 //        // Retrieve feedback message and clear it from session
 //        String feedbackMessage = (String) session.getAttribute("feedbackMessage");
@@ -268,25 +254,22 @@ public class QuizController {
 //            session.removeAttribute("feedbackMessage");
 //        }
 
-        // Return the quiz question view
-        return "quizQuestion";
+        return ResponseEntity.ok(response);
     }
 
     // Submit an answer and navigate to the next question
-    @PostMapping("/quizzes/play/{quizId}/question/{index}/submit")
-    public String submitAnswer(@PathVariable("quizId") Long quizId,
-                               @PathVariable("index") int index,
-                               @RequestParam("answer") String answer,
-                               HttpSession session,
-                               Model model) {
+    @PostMapping("/play/{quizId}/question/{index}/submit")
+    public ResponseEntity<?> submitAnswer(@PathVariable Long quizId,
+                               @PathVariable int index,
+                               @RequestBody String answer,
+                               HttpSession session) {
         // Retrieve session data
         List<Question> questions = (List<Question>) session.getAttribute("questions");
         Quiz quiz = (Quiz) session.getAttribute("currentQuiz"); // Retrieve the quiz object
         int score = (int) session.getAttribute("score");
 
         if (questions == null || index < 0 || index >= questions.size()) {
-            model.addAttribute("errorMessage", "Quiz data is missing or invalid.");
-            return "redirect:/viewAllQuizzes";
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid quiz or question index.");
         }
 
         Question question = questions.get(index);
@@ -312,34 +295,33 @@ public class QuizController {
 //            return "redirect:/quizzes/play/" + quizId + "/complete";
 //        }
 
-        // Add attributes for the current question and feedback
-        model.addAttribute("quiz", quiz); // Ensure quiz is added
-        model.addAttribute("currentQuestion", question);
-        model.addAttribute("currentQuestionIndex", index);
-        model.addAttribute("totalQuestions", questions.size());
-        model.addAttribute("feedbackMessage", feedbackMessage);
+        // Preparing response
+        Map<String, Object> response = new HashMap<>();
+        response.put("quiz", quiz);
+        response.put("currentQuestion", question);
+        response.put("currentQuestionIndex", index);
+        response.put("totalQuestions", questions.size());
+        response.put("feedbackMessage", feedbackMessage);
 
-        // Stay on the current question
-        return "quizQuestion";
+        return ResponseEntity.ok(response);
     }
 
     // Complete the quiz and display the final score
-    @GetMapping("/quizzes/play/{quizId}/complete")
-    public String completeQuiz(@PathVariable("quizId") Long quizId, HttpSession session, Model model) {
+    @GetMapping("/play/{quizId}/complete")
+    public ResponseEntity<?> completeQuiz(@PathVariable Long quizId, HttpSession session) {
 
         // Retrieve final score
         int finalScore = (int) session.getAttribute("score");
         List<Question> questions = (List<Question>) session.getAttribute("questions");
 
         if (questions == null || questions.isEmpty()) {
-            model.addAttribute("errorMessage", "No quiz data found. Please try again.");
-            return "error_page";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session expired. Please log in.");
         }
 
         // Retrieve user ID from session
         Long userId = (Long) session.getAttribute("userId");
         if (userId == null) {
-            return "redirect:/login"; // Redirect to login if session is invalid
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid session or quiz.");
         }
 
         // Fetch the player and add to participants list
@@ -379,28 +361,31 @@ public class QuizController {
             return feedback;
         }).toList();
 
-        model.addAttribute("finalScore", finalScore);
-        model.addAttribute("totalQuestions", questions != null ? questions.size() : 0);
-        model.addAttribute("feedbackList", feedbackList);
+        // Prepare response
+        Map<String, Object> response = new HashMap<>();
+        response.put("finalScore", finalScore);
+        response.put("totalQuestions", questions.size());
+        response.put("feedbackList", feedbackList);
 
         session.removeAttribute("currentQuiz");
         session.removeAttribute("questions");
         session.removeAttribute("currentQuestionIndex");
         session.removeAttribute("score");
 
+        session.invalidate(); // Clear session data
+
         //debug
         System.out.println("User added to quiz participants: " + user.getUsername());
         System.out.println("Score saved: " + finalScore);
         System.out.println("Total participants: " + quiz.getParticipants().size());
 
-        return "quizComplete"; // Return the quiz completion view
+        return ResponseEntity.ok(response);
     }
 
     //like or dislike option endpoint
-    @PostMapping("/quizzes/like-dislike/{quizId}")
+    @PostMapping("/{quizId}/like-dislike")
     public ResponseEntity<Integer> likeQuiz(@PathVariable Long quizId) {
         Quiz updatedQuiz = quizService.likeQuiz(quizId);
         return ResponseEntity.ok(updatedQuiz.getLikes());
     }
-
 }
