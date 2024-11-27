@@ -9,6 +9,7 @@ import com.example.QuizQuestArena_Backend.dto.QuizDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
 import com.example.QuizQuestArena_Backend.model.*;
 import jakarta.transaction.Transactional;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -258,23 +259,41 @@ public class QuizService {
 
 
     //for playerUser view ongoing, upcoming, past and participated quizzes function
+    @Transactional
     public List<Quiz> getOngoingQuizzes() {
         LocalDateTime now = LocalDateTime.now();
-        return quizRepo.findByStartDateBeforeAndEndDateAfter(now, now);
+        List<Quiz> quizzes = quizRepo.findByStartDateBeforeAndEndDateAfter(now, now)
+                .stream()
+                .peek(quiz -> Hibernate.initialize(quiz.getParticipants())) // Initialize participants
+                .collect(Collectors.toList());
+        quizzes.forEach(quiz -> System.out.println("Quiz ID: " + quiz.getId() + ", Participants: " + quiz.getParticipants().size()));
+        return quizzes;
     }
 
+    @Transactional
     public List<Quiz> getUpcomingQuizzes() {
         LocalDateTime now = LocalDateTime.now();
-        return quizRepo.findByStartDateAfter(now);
+        return quizRepo.findByStartDateAfter(now)
+                .stream()
+                .peek(quiz -> Hibernate.initialize(quiz.getParticipants())) // Initialize participants
+                .collect(Collectors.toList());
     }
 
+    @Transactional
     public List<Quiz> getPastQuizzes() {
         LocalDateTime now = LocalDateTime.now();
-        return quizRepo.findByEndDateBefore(now);
+        return quizRepo.findByEndDateBefore(now)
+                .stream()
+                .peek(quiz -> Hibernate.initialize(quiz.getParticipants())) // Initialize participants
+                .collect(Collectors.toList());
     }
 
+    @Transactional
     public List<Quiz> getParticipatedQuizzes(Long userId) {
-        return quizRepo.findParticipatedQuizzesByUserId(userId);
+        return quizRepo.findParticipatedQuizzesByUserId(userId)
+                .stream()
+                .peek(quiz -> Hibernate.initialize(quiz.getParticipants())) // Initialize participants
+                .collect(Collectors.toList());
     }
 
     //--------------ongoing quiz function-------------------------------
@@ -364,6 +383,4 @@ public class QuizService {
     public Quiz saveQuiz(Quiz quiz) {
         return quizRepo.save(quiz);
     }
-
-
 }

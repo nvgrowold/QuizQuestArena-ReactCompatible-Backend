@@ -171,6 +171,20 @@ public class QuizController {
     /**
      * View quizzes categorized as ongoing, upcoming, past, and participated.
      */
+    //helper method to map Quiz to QuizDTO objects
+    //viewAllQuizzes
+    private QuizDTO convertToDto(Quiz quiz) {
+        return new QuizDTO(
+                quiz.getId(),
+                quiz.getName(),
+                quiz.getCategory(),
+                quiz.getDifficulty(),
+                quiz.getStartDate(),
+                quiz.getEndDate(),
+                quiz.getLikes(),
+                quiz.getParticipants() != null ? quiz.getParticipants().size() : 0
+        );
+    }
     //endpoints for player user view all quizzes
     @GetMapping("/viewAllQuizzes")
     public ResponseEntity<?> viewAllQuizzes(HttpSession session) {
@@ -180,11 +194,31 @@ public class QuizController {
         }
 
         // fetching quizzes by different types
-        List<Quiz> ongoingQuizzes = quizService.getOngoingQuizzes();
-        List<Quiz> upcomingQuizzes = quizService.getUpcomingQuizzes();
-        List<Quiz> pastQuizzes = quizService.getPastQuizzes();
-        List<Quiz> participatedQuizzes = quizService.getParticipatedQuizzes(userId);
+//        List<Quiz> ongoingQuizzes = quizService.getOngoingQuizzes();
+//        List<Quiz> upcomingQuizzes = quizService.getUpcomingQuizzes();
+//        List<Quiz> pastQuizzes = quizService.getPastQuizzes();
+//        List<Quiz> participatedQuizzes = quizService.getParticipatedQuizzes(userId);
 
+        // Convert quizzes to DTOs to avoid circular references
+        List<QuizDTO> ongoingQuizzes = quizService.getOngoingQuizzes()
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+
+        List<QuizDTO> upcomingQuizzes = quizService.getUpcomingQuizzes()
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+
+        List<QuizDTO> pastQuizzes = quizService.getPastQuizzes()
+                .stream()
+                .map(this::convertToDto)
+                .toList();
+
+        List<QuizDTO> participatedQuizzes = quizService.getParticipatedQuizzes(userId)
+                .stream()
+                .map(this::convertToDto)
+                .toList();
         // debugging logs
         System.out.println("Fetched Ongoing Quizzes: " + ongoingQuizzes.size());
         System.out.println("Fetched Upcoming Quizzes: " + upcomingQuizzes.size());
