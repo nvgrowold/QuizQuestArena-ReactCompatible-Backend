@@ -324,49 +324,78 @@ public class QuizController {
 
         return ResponseEntity.ok(response);
     }
+    private String sanitize(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.trim().toLowerCase();
+    }
+
 
     // Submit an answer and navigate to the next question
     @PostMapping("/play/{quizId}/question/{index}/submit")
     public ResponseEntity<?> submitAnswer(@PathVariable Long quizId,
                                @PathVariable int index,
-                               @RequestBody String answer,
+                               @RequestBody Map<String, String> payload, // Accept answer as JSON payload
                                HttpSession session) {
+        String playerAnswer = sanitize(payload.get("answer"));; // Extract answer value from JSON
+        // Validate player answer
+        if (playerAnswer == null || playerAnswer.isEmpty()) {
+            return ResponseEntity.badRequest().body("Invalid answer submitted.");
+        }
         // Retrieve session data
         List<Question> questions = (List<Question>) session.getAttribute("questions");
-        Quiz quiz = (Quiz) session.getAttribute("currentQuiz"); // Retrieve the quiz object
-        int score = (int) session.getAttribute("score");
+        //Quiz quiz = (Quiz) session.getAttribute("currentQuiz"); // Retrieve the quiz object
 
         if (questions == null || index < 0 || index >= questions.size()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid quiz or question index.");
         }
 
         Question question = questions.get(index);
-        // Save user's selected answer
-        question.setPlayerAnswer(answer);
 
-        // Find if the answer matches any option in the question
+        // Debugging: Ensure options are mapped correctly
+        System.out.println("Debugging Options:");
+        question.getOptions().forEach(option ->
+                System.out.println("Option Text: " + sanitize(option.getOptionText()) + ", Is Correct: " + option.isCorrect())
+        );
+
+        // Trim and compare answers to avoid case/whitespace issues
         boolean isCorrect = question.getOptions().stream()
-                .anyMatch(option -> option.getOptionText().equalsIgnoreCase(answer) && option.isCorrect());
+                .anyMatch(option -> sanitize(option.getOptionText()).equalsIgnoreCase(sanitize(playerAnswer)) && option.isCorrect());
+        // Debugging
+        System.out.println("Submitted Answer: " + sanitize(playerAnswer));
+        System.out.println("Correct Answer from Question: " + sanitize(question.getCorrectAnswer()));
+        System.out.println("Options: ");
+        question.getOptions().forEach(option ->
+                System.out.println("Option Text: " + sanitize(option.getOptionText()) + ", Is Correct: " + option.isCorrect())
+        );
+        System.out.println("Comparison Result: " + isCorrect);
 
+        question.setPlayerAnswer(sanitize(playerAnswer)); // Save the sanitized answer
+        // Update session score
+        int score = (int) session.getAttribute("score");
         if (isCorrect) {
             score++;
             session.setAttribute("score", score);
         }
 
+        // Set player answer for feedback
+        //question.setPlayerAnswer(playerAnswer);
+
         // Return feedback
         String feedbackMessage = isCorrect
                 ? "Correct"
-                : "Incorrect! The correct answer was: " + question.getCorrectAnswer();
+                : "Incorrect! The correct answer was: " + sanitize(question.getCorrectAnswer());
 
-        // Check if the answer is correct
-        if (answer.equalsIgnoreCase(question.getCorrectAnswer())) {
-            score++;
-            session.setAttribute("score", score);
-           // model.addAttribute("feedbackMessage", "Correct!");
-            feedbackMessage = "Correct";
-        } else {
-            feedbackMessage = "Incorrect! The correct answer was: " + question.getCorrectAnswer();
-        }
+//        // Check if the answer is correct
+//        if (answer.equalsIgnoreCase(question.getCorrectAnswer())) {
+//            score++;
+//            session.setAttribute("score", score);
+//           // model.addAttribute("feedbackMessage", "Correct!");
+//            feedbackMessage = "Correct";
+//        } else {
+//            feedbackMessage = "Incorrect! The correct answer was: " + question.getCorrectAnswer();
+//        }
 
 //        // Navigate to the next question or complete the quiz
 //        int nextIndex = index + 1;
@@ -377,16 +406,22 @@ public class QuizController {
 //        }
 
         // Use DTOs to prepare the response
-        QuizDTO quizDTO = new QuizDTO(quiz); // Convert Quiz to QuizDTO
-        QuestionDTO questionDTO = new QuestionDTO(question); // Convert Question to QuestionDTO
+        //QuizDTO quizDTO = new QuizDTO(quiz); // Convert Quiz to QuizDTO
+        //QuestionDTO questionDTO = new QuestionDTO(question); // Convert Question to QuestionDTO
 
         // Preparing response
         Map<String, Object> response = new HashMap<>();
-        response.put("quiz", quizDTO);
-        response.put("currentQuestion", questionDTO);
+        response.put("quiz", new QuizDTO((Quiz) session.getAttribute("currentQuiz")));
+        response.put("currentQuestion", new QuestionDTO(question));
         response.put("currentQuestionIndex", index);
         response.put("totalQuestions", questions.size());
         response.put("feedbackMessage", feedbackMessage);
+        response.put("isCorrect", isCorrect);
+
+        System.out.println("Submitted Answer: " + sanitize(playerAnswer));
+        System.out.println("Correct Answer: " + sanitize(question.getCorrectAnswer()));
+        System.out.println("Comparison Result: " + sanitize(playerAnswer).equalsIgnoreCase(sanitize(question.getCorrectAnswer())));
+        System.out.println("Comparison Result: " + isCorrect);
 
         return ResponseEntity.ok(response);
     }
@@ -440,16 +475,26 @@ public class QuizController {
         QuizDTO quizDTO = new QuizDTO(quiz); // Convert Quiz entity to QuizDTO
 
         // Collect question details for feedback
-        List<QuizFeedbackDTO> feedbackList = questions != null ? questions.stream()
-                .map(question -> new QuizFeedbackDTO(
-                        question.getText(),
-                        question.getPlayerAnswer(),
-                        question.getCorrectAnswer(),
-                question.getPlayerAnswer() != null &&
-                                 question.getOptions().stream()
-                                        .anyMatch(option -> option.isCorrect() && option.getOptionText().equalsIgnoreCase(question.getPlayerAnswer()))
-        ))
-        .collect(Collectors.toList()) : new ArrayList<>();
+        List<QuizFeedbackDTO> feedbackList = questions.stream()
+                .map(question -> {
+                            boolean isCorrect = question.getPlayerAnswer() != null &&
+                                    question.getOptions().stream()
+                                            .anyMatch(option -> option.isCorrect() &&
+                                                    sanitize(option.getOptionText()).equalsIgnoreCase(sanitize(question.getPlayerAnswer())));
+                            // Debug the feedback
+                            System.out.println("Feedback: Question: " + question.getText()
+                                    + ", Player Answer: " + sanitize(question.getPlayerAnswer())
+                                    + ", Correct Answer: " + sanitize(question.getCorrectAnswer())
+                                    + ", Is Correct: " + isCorrect);
+
+                            return new QuizFeedbackDTO(
+                                    question.getText(),
+                                    question.getPlayerAnswer(),
+                                    question.getCorrectAnswer(),
+                                    isCorrect
+                            );
+                })
+                .collect(Collectors.toList());
 
         // Prepare response
         Map<String, Object> response = new HashMap<>();
@@ -470,7 +515,6 @@ public class QuizController {
         if (session.getAttribute("score") != null) {
             session.removeAttribute("score");
         }
-
 
         //debug
         System.out.println("User added to quiz participants: " + user.getUsername());

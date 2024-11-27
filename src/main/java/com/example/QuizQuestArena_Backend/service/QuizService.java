@@ -185,21 +185,27 @@ public class QuizService {
             Question question = new Question();
             question.setText(openTDBQuestion.getQuestion());
             question.setType(openTDBQuestion.getType());
-            question.setCorrectAnswer(openTDBQuestion.getCorrect_answer()); // Map correct answer
+            question.setCorrectAnswer(sanitize(openTDBQuestion.getCorrect_answer())); // Map correct answer
+            System.out.println("Fetched Question: " + question.getText());
+            System.out.println("Correct Answer: " + sanitize(question.getCorrectAnswer()));
 
             // Map options (correct and incorrect answers)
             List<Options> options = new ArrayList<>();
+
             // Add correct answer as an option
             Options correctOption = new Options();
-            correctOption.setOptionText(openTDBQuestion.getCorrect_answer());
+            correctOption.setOptionText(sanitize(openTDBQuestion.getCorrect_answer()));
+            correctOption.setCorrect(true); // Mark the correct option
             correctOption.setQuestion(question); // **Set the question reference in Option**
             options.add(correctOption);
+
 
             // Add incorrect answers as options
             for (String incorrect : openTDBQuestion.getIncorrect_answers()) {
                 Options incorrectOption = new Options();
-                incorrectOption.setOptionText(incorrect);
-                incorrectOption.setQuestion(question);// **Set the question reference in Option**
+                incorrectOption.setOptionText(sanitize(incorrect));
+                incorrectOption.setCorrect(false);
+                incorrectOption.setQuestion(question); // Set question reference
                 options.add(incorrectOption);
             }
 
@@ -208,9 +214,30 @@ public class QuizService {
 
             question.setOptions(options); // Set options in question
             questions.add(question);
+            // Debugging: Print all options
+            System.out.println("Options for Question: " + question.getText());
+            // Debugging: Ensure options are mapped correctly
+            System.out.println("Mapped Options:");
+            for (Options option : options) {
+                System.out.println("Option: " + option.getOptionText() + ", Is Correct: " + option.isCorrect());
+            }
+
         }
         return questions;
     }
+
+    /**
+     * Sanitizes a string by trimming whitespace and normalizing case.
+     * @param input The input string to sanitize.
+     * @return A sanitized string.
+     */
+    private String sanitize(String input) {
+        if (input == null) {
+            return ""; // Return an empty string for null inputs
+        }
+        return input.trim().toLowerCase(); // Normalize case and trim whitespace
+    }
+
 
     /**
      * Maps a human-readable category name to its corresponding category ID in OpenTDB.
