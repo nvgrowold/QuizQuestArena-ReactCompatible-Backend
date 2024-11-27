@@ -8,6 +8,7 @@ import com.example.QuizQuestArena_Backend.model.*;
 import com.example.QuizQuestArena_Backend.service.NewQuizNotificationService;
 import com.example.QuizQuestArena_Backend.service.QuizService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,13 +17,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -393,6 +392,7 @@ public class QuizController {
     }
 
     // Complete the quiz and display the final score
+    @Transactional //ensure the collection is loaded, quiz.getParticipants() call may trigger a lazy loading
     @GetMapping("/play/{quizId}/complete")
     public ResponseEntity<?> completeQuiz(@PathVariable Long quizId, HttpSession session) {
 
@@ -440,16 +440,16 @@ public class QuizController {
         QuizDTO quizDTO = new QuizDTO(quiz); // Convert Quiz entity to QuizDTO
 
         // Collect question details for feedback
-        List<QuizFeedbackDTO> feedbackList = questions.stream()
+        List<QuizFeedbackDTO> feedbackList = questions != null ? questions.stream()
                 .map(question -> new QuizFeedbackDTO(
                         question.getText(),
                         question.getPlayerAnswer(),
                         question.getCorrectAnswer(),
-                        question.getPlayerAnswer() != null &&
-                                question.getOptions().stream()
+                question.getPlayerAnswer() != null &&
+                                 question.getOptions().stream()
                                         .anyMatch(option -> option.isCorrect() && option.getOptionText().equalsIgnoreCase(question.getPlayerAnswer()))
-                ))
-                .toList();
+        ))
+        .collect(Collectors.toList()) : new ArrayList<>();
 
         // Prepare response
         Map<String, Object> response = new HashMap<>();
@@ -458,12 +458,19 @@ public class QuizController {
         response.put("feedbackList", feedbackList);
         response.put("quiz", quizDTO);
 
-//        session.removeAttribute("currentQuiz");
-//        session.removeAttribute("questions");
-//        session.removeAttribute("currentQuestionIndex");
-//        session.removeAttribute("score");
+        if (session.getAttribute("currentQuiz") != null) {
+            session.removeAttribute("currentQuiz");
+        }
+        if (session.getAttribute("questions") != null) {
+            session.removeAttribute("questions");
+        }
+        if (session.getAttribute("currentQuestionIndex") != null) {
+            session.removeAttribute("currentQuestionIndex");
+        }
+        if (session.getAttribute("score") != null) {
+            session.removeAttribute("score");
+        }
 
-        session.invalidate(); // Clear session data
 
         //debug
         System.out.println("User added to quiz participants: " + user.getUsername());
@@ -475,11 +482,15 @@ public class QuizController {
 
     //like or dislike option endpoint
     @PostMapping("/{quizId}/like-dislike")
-    public ResponseEntity<Integer> likeQuiz(@PathVariable Long quizId) {
-        Quiz updatedQuiz = quizService.likeQuiz(quizId);
-        if (updatedQuiz == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+    public ResponseEntity<Integer> likeQuiz(@PathVariable Long quizId, @RequestParam boolean like) {
+        Quiz quiz = quizService.getQuizById(quizId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found"));
+
+        if (like) {
+            quiz.setLikes(quiz.getLikes() + 1);
         }
-        return ResponseEntity.ok(updatedQuiz.getLikes());
+
+        quizRepo.save(quiz);
+        return ResponseEntity.ok(quiz.getLikes());
     }
 }
