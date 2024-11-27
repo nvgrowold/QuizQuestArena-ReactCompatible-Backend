@@ -4,6 +4,7 @@ import com.example.QuizQuestArena_Backend.db.QuestionRepo;
 import com.example.QuizQuestArena_Backend.db.QuizRepo;
 import com.example.QuizQuestArena_Backend.db.ScoreRepo;
 import com.example.QuizQuestArena_Backend.db.UserRepo;
+import com.example.QuizQuestArena_Backend.dto.OptionsDTO;
 import com.example.QuizQuestArena_Backend.dto.QuestionDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizDTO;
 import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
@@ -302,6 +303,12 @@ public class QuizService {
         Optional<Quiz> quizOpt = quizRepo.findByIdWithQuestions(quizId);
         if (quizOpt.isPresent()) {
             Quiz quiz = quizOpt.get();
+
+            // Initialize lazy collections to avoid LazyInitializationException
+            quiz.getQuestions().forEach(question -> {
+                question.getOptions().size(); // Initialize options
+            });
+
             //debug fetching logic
             for (Question question : quiz.getQuestions()) {
                 System.out.println("Question: " + question.getText());
@@ -327,23 +334,26 @@ public class QuizService {
                     QuizDTO dto = new QuizDTO();
                     dto.setId(quiz.getId());
                     dto.setName(quiz.getName());
-                    dto.setQuestions(quiz.getQuestions()  != null
+                    dto.setQuestions(quiz.getQuestions() != null
                             ? quiz.getQuestions().stream()
                             .map(q -> new QuestionDTO(
                                     q.getId(),
                                     q.getText(),
-                                    q.getOptions()  != null
+                                    q.getQuestionIndex(),
+                                    q.getOptions() != null
                                             ? q.getOptions().stream()
-                                        .map(Options::getOptionText) // Convert List<Options> to List<String>
-                                        .collect(Collectors.toList())
-                                            : List.of() // Empty list if options are null
+                                            .map(option -> new OptionsDTO(option.getId(), option.getOptionText(), option.isCorrect()))
+                                            .collect(Collectors.toList())
+                                            : List.of(), // Empty list if options are null
+                                    q.getCorrectAnswer()
                             ))
                             .collect(Collectors.toList())
-                            : List.of()
-                    );// Empty list if questions are null
+                            : List.of() // Empty list if questions are null
+                    );
                     return dto;
                 });
     }
+
 
     //like dislike option logic
     public Quiz likeQuiz(Long quizId) {

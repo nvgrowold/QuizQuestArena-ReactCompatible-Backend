@@ -1,6 +1,7 @@
 package com.example.QuizQuestArena_Backend.service;
 
 import com.example.QuizQuestArena_Backend.db.QuestionRepo;
+import com.example.QuizQuestArena_Backend.dto.OptionsDTO;
 import com.example.QuizQuestArena_Backend.dto.QuestionDTO;
 import com.example.QuizQuestArena_Backend.model.OpenTDBQuestion;
 import com.example.QuizQuestArena_Backend.model.Options;
@@ -33,16 +34,16 @@ public class QuestionService {
     //converts Question entities into QuestionDTO objects
     public List<QuestionDTO> getQuestionsForQuiz(Long quizId) {
         List<Question> questions = questionRepo.findAllByQuizId(quizId);
-        return questions.stream().map(question ->
-                new QuestionDTO(
-                    question.getId(),
-                    question.getText(),
-                    question.getQuestionIndex(),
-                    question.getOptions()
-                            .stream()
-                            .map(Options::getOptionText)
-                            .collect(Collectors.toList())
-                )
-        ).collect(Collectors.toList());
+        return questions.stream()
+                .map(question -> new QuestionDTO(
+                        question.getId(),
+                        question.getText(),
+                        question.getQuestionIndex(),
+                        question.getOptions().stream()
+                                .map(option -> new OptionsDTO(option.getId(), option.getOptionText(), option.isCorrect()))
+                                .collect(Collectors.toList()),
+                        question.getCorrectAnswer()
+                ))
+                .collect(Collectors.toList());
     }
 }

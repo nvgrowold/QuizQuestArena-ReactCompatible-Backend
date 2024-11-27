@@ -1,5 +1,6 @@
 package com.example.QuizQuestArena_Backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,12 +34,14 @@ public class Quiz {
 
     //cascade remove parent and orphanRemoval will remove it's child as well
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.REMOVE, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Score> scores; // Relationship to Score
 
     @ManyToMany(mappedBy = "participatedQuizzes",fetch = FetchType.LAZY)
     private List<PlayerUser> participants = new ArrayList<>(); // Users who participated
 
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Question> questions = new ArrayList<>();; // Add this to map questions to the quiz
 
     //Avoid Replacing the Collection

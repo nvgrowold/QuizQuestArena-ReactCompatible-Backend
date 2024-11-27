@@ -1,5 +1,7 @@
 package com.example.QuizQuestArena_Backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,6 +26,7 @@ public class Question {
 
     //question options
     @OneToMany(mappedBy = "question", fetch = FetchType.EAGER, cascade = CascadeType.ALL,orphanRemoval = true)
+    @JsonIgnore // Prevent circular reference during serialization
     private List<Options> options;
 
     @ManyToOne

@@ -1,10 +1,13 @@
 package com.example.QuizQuestArena_Backend.dto;
 
+import com.example.QuizQuestArena_Backend.model.PlayerUser;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.springframework.data.annotation.ReadOnlyProperty;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -38,6 +41,8 @@ public class UserDTO {
     // Use MultipartFile for file uploads
     private MultipartFile profilePicture;
 
+    private List<Long> participatedQuizIds; // Only store quiz IDs
+
     // Overloaded constructor for Entity to DTO mapping
     public UserDTO(Long id, String username, String firstName, String lastName, String email,
                    String phoneNumber, String address, String role, String profilePictureUrl) {
@@ -51,6 +56,21 @@ public class UserDTO {
         this.address = address;
         this.role = role;
         this.profilePicture = null; // Profile picture not mapped here
+    }
+
+    // Constructor to map from PlayerUser entity to UserDTO
+    public UserDTO(PlayerUser playerUser) {
+        this.id = playerUser.getId();
+        this.username = playerUser.getUsername();
+        this.firstName = playerUser.getFirstName();
+        this.lastName = playerUser.getLastName();
+        this.email = playerUser.getEmail();
+        this.phoneNumber = playerUser.getPhoneNumber();
+        this.address = playerUser.getAddress();
+        this.role = playerUser.getRole();
+        this.participatedQuizIds = playerUser.getParticipatedQuizzes() != null
+                ? playerUser.getParticipatedQuizzes().stream().map(quiz -> quiz.getId()).toList()
+                : List.of(); // Handle null or empty lists
     }
 }
 

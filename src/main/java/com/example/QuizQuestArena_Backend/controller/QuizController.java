@@ -3,8 +3,7 @@ package com.example.QuizQuestArena_Backend.controller;
 import com.example.QuizQuestArena_Backend.db.QuizRepo;
 import com.example.QuizQuestArena_Backend.db.ScoreRepo;
 import com.example.QuizQuestArena_Backend.db.UserRepo;
-import com.example.QuizQuestArena_Backend.dto.QuizDTO;
-import com.example.QuizQuestArena_Backend.dto.QuizScoreDTO;
+import com.example.QuizQuestArena_Backend.dto.*;
 import com.example.QuizQuestArena_Backend.model.*;
 import com.example.QuizQuestArena_Backend.service.NewQuizNotificationService;
 import com.example.QuizQuestArena_Backend.service.QuizService;
@@ -24,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Controller class for managing quiz-related endpoints.
@@ -120,7 +120,6 @@ public class QuizController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session expired. Please log in.");
             }
 
-
             // Fetch user and check role
             PlayerUser user = userRepo.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
@@ -140,8 +139,21 @@ public class QuizController {
      * Fetch all quizzes for management.
      */
     @GetMapping("/manage")
-    public ResponseEntity<List<Quiz>> manageQuizzes() {
-        List<Quiz> quizzes = quizService.getAllQuizzes();
+    public ResponseEntity<List<QuizDTO>> manageQuizzes() {
+        List<QuizDTO> quizzes = quizService.getAllQuizzes().stream()
+//                .map(quiz -> new QuizDTO(
+//                        quiz.getId(),
+//                        quiz.getName(),
+//                        quiz.getCategory(),
+//                        quiz.getDifficulty(),
+//                        quiz.getStartDate(),
+//                        quiz.getEndDate(),
+//                        quiz.getLikes(),
+//                        quiz.getParticipants() != null ? quiz.getParticipants().size() : 0
+//                ))
+//                .toList();
+                .map(QuizDTO::new) // Use the updated QuizDTO
+                .toList();
         return ResponseEntity.ok(quizzes);
     }
 
@@ -236,8 +248,10 @@ public class QuizController {
     }
 
 
-    //----------------------Ongoing Quiz Functionality---------------------------------
-    //start a quiz: display the first question of the quiz.
+    //----------------------Ongoing / Playing Quiz Functionality---------------------------------
+    //start a quiz
+    //initialise the quiz session:retrieve quiz data, fetches questions and stores in setion.
+    //set initial question index and score in session
     @GetMapping("/play/{quizId}")
     public ResponseEntity<?> startQuiz(@PathVariable Long quizId, HttpSession session) {
         Optional<Quiz> quizOpt = quizService.getQuizById(quizId);
@@ -248,36 +262,57 @@ public class QuizController {
         Quiz quiz = quizOpt.get();
         List<Question> questions = quiz.getQuestions();
 
+        if (questions == null || questions.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No questions available for this quiz.");
+        }
+
         session.setAttribute("currentQuiz", quiz);
         session.setAttribute("questions", questions);
         session.setAttribute("currentQuestionIndex", 0);
         session.setAttribute("score", 0);
 
-        return ResponseEntity.ok(quiz);
+        // Debugging
+        System.out.println("Quiz started: " + quiz.getId());
+        System.out.println("Questions loaded: " + questions.size());
+
+        // Prepare response
+        // Create DTOs
+        QuizDTO quizDTO = new QuizDTO(quiz);
+        QuestionDTO firstQuestionDTO = new QuestionDTO(questions.get(0));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("quiz", quizDTO);
+        response.put("question", firstQuestionDTO);
+        response.put("currentQuestionIndex", 0);
+        response.put("totalQuestions", questions.size());
+
+        return ResponseEntity.ok(response);
     }
 
     // Show the current question
     // Show the current question
     @GetMapping("/play/{quizId}/question/{index}")
-    public ResponseEntity<?> showQuestion(@PathVariable Long quizId,
-                               @PathVariable int index,
-                               HttpSession session) {
+    public ResponseEntity<?> showQuestion(@PathVariable Long quizId,@PathVariable int index,HttpSession session) {
         // Retrieve quiz and questions from session
         Quiz quiz = (Quiz) session.getAttribute("currentQuiz");
         List<Question> questions = (List<Question>) session.getAttribute("questions");
 
-        if (quiz == null || questions == null || index < 0 || index >= questions.size()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid quiz or question index.");
+        //debug
+        if (quiz == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No quiz found in session.");
+        }
+        if (questions == null || questions.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No questions found in session.");
+        }
+        if (index < 0 || index >= questions.size()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid question index.");
         }
 
-
-        // Retrieve the current question
-        Question question = questions.get(index);
+        QuestionDTO questionDTO = new QuestionDTO(questions.get(index));
 
         // Preparing response
         Map<String, Object> response = new HashMap<>();
-        response.put("quiz", quiz);
-        response.put("question", question);
+        response.put("question", questionDTO);
         response.put("currentQuestionIndex", index);
         response.put("totalQuestions", questions.size());
 
@@ -310,8 +345,21 @@ public class QuizController {
         // Save user's selected answer
         question.setPlayerAnswer(answer);
 
+        // Find if the answer matches any option in the question
+        boolean isCorrect = question.getOptions().stream()
+                .anyMatch(option -> option.getOptionText().equalsIgnoreCase(answer) && option.isCorrect());
+
+        if (isCorrect) {
+            score++;
+            session.setAttribute("score", score);
+        }
+
+        // Return feedback
+        String feedbackMessage = isCorrect
+                ? "Correct"
+                : "Incorrect! The correct answer was: " + question.getCorrectAnswer();
+
         // Check if the answer is correct
-        String feedbackMessage;
         if (answer.equalsIgnoreCase(question.getCorrectAnswer())) {
             score++;
             session.setAttribute("score", score);
@@ -329,10 +377,14 @@ public class QuizController {
 //            return "redirect:/quizzes/play/" + quizId + "/complete";
 //        }
 
+        // Use DTOs to prepare the response
+        QuizDTO quizDTO = new QuizDTO(quiz); // Convert Quiz to QuizDTO
+        QuestionDTO questionDTO = new QuestionDTO(question); // Convert Question to QuestionDTO
+
         // Preparing response
         Map<String, Object> response = new HashMap<>();
-        response.put("quiz", quiz);
-        response.put("currentQuestion", question);
+        response.put("quiz", quizDTO);
+        response.put("currentQuestion", questionDTO);
         response.put("currentQuestionIndex", index);
         response.put("totalQuestions", questions.size());
         response.put("feedbackMessage", feedbackMessage);
@@ -345,7 +397,7 @@ public class QuizController {
     public ResponseEntity<?> completeQuiz(@PathVariable Long quizId, HttpSession session) {
 
         // Retrieve final score
-        int finalScore = (int) session.getAttribute("score");
+        Integer finalScore = (int) session.getAttribute("score");
         List<Question> questions = (List<Question>) session.getAttribute("questions");
 
         if (questions == null || questions.isEmpty()) {
@@ -384,27 +436,32 @@ public class QuizController {
             userRepo.save(user);
         }
 
+        // Use QuizDTO to avoid lazy initialization issues
+        QuizDTO quizDTO = new QuizDTO(quiz); // Convert Quiz entity to QuizDTO
+
         // Collect question details for feedback
-        List<QuizFeedback> feedbackList = questions.stream().map(question -> {
-            QuizFeedback feedback = new QuizFeedback();
-            feedback.setQuestion(question.getText());
-            feedback.setPlayerAnswer(question.getPlayerAnswer());
-            feedback.setCorrectAnswer(question.getCorrectAnswer());
-            feedback.setCorrect(question.getPlayerAnswer() != null &&
-                    question.getPlayerAnswer().equalsIgnoreCase(question.getCorrectAnswer()));
-            return feedback;
-        }).toList();
+        List<QuizFeedbackDTO> feedbackList = questions.stream()
+                .map(question -> new QuizFeedbackDTO(
+                        question.getText(),
+                        question.getPlayerAnswer(),
+                        question.getCorrectAnswer(),
+                        question.getPlayerAnswer() != null &&
+                                question.getOptions().stream()
+                                        .anyMatch(option -> option.isCorrect() && option.getOptionText().equalsIgnoreCase(question.getPlayerAnswer()))
+                ))
+                .toList();
 
         // Prepare response
         Map<String, Object> response = new HashMap<>();
         response.put("finalScore", finalScore);
         response.put("totalQuestions", questions.size());
         response.put("feedbackList", feedbackList);
+        response.put("quiz", quizDTO);
 
-        session.removeAttribute("currentQuiz");
-        session.removeAttribute("questions");
-        session.removeAttribute("currentQuestionIndex");
-        session.removeAttribute("score");
+//        session.removeAttribute("currentQuiz");
+//        session.removeAttribute("questions");
+//        session.removeAttribute("currentQuestionIndex");
+//        session.removeAttribute("score");
 
         session.invalidate(); // Clear session data
 
@@ -420,6 +477,9 @@ public class QuizController {
     @PostMapping("/{quizId}/like-dislike")
     public ResponseEntity<Integer> likeQuiz(@PathVariable Long quizId) {
         Quiz updatedQuiz = quizService.likeQuiz(quizId);
+        if (updatedQuiz == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
         return ResponseEntity.ok(updatedQuiz.getLikes());
     }
 }

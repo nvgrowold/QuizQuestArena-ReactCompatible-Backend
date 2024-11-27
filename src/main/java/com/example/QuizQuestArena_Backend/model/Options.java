@@ -1,5 +1,6 @@
 package com.example.QuizQuestArena_Backend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,5 +17,6 @@ public class Options {
 
     @ManyToOne
     @JoinColumn(name = "question_id")
+    @JsonBackReference // Child-side serialization
     private Question question;
 }

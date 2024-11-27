@@ -1,5 +1,6 @@
 package com.example.QuizQuestArena_Backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,6 +39,9 @@ public class PlayerUser {
 
     private int score;
 
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Score> scores; // Relationship to Score
+
     private String profilePicture; // file path or URL
 
     @ManyToMany
@@ -46,6 +50,7 @@ public class PlayerUser {
             joinColumns = @JoinColumn(name = "player_id"),
             inverseJoinColumns = @JoinColumn(name = "quiz_id")
     )
+    @JsonIgnore // Prevent recursion during JSON serialization
     private List<Quiz> participatedQuizzes; // quizzes this user participated
 
     // Custom constructor matching the fields in mapToEntity
@@ -79,7 +84,4 @@ public class PlayerUser {
                 ", profilePictureUrl='" + profilePicture + '\'' +
                 '}';
     }
-
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Score> scores; // Relationship to Score
 }
