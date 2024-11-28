@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -524,17 +523,29 @@ public class QuizController {
         return ResponseEntity.ok(response);
     }
 
+    //fetch the current number of likes
+    @GetMapping("/{quizId}/likes")
+    public ResponseEntity<Integer> getLikes(@PathVariable Long quizId) {
+        Quiz quiz = quizService.getQuizById(quizId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found"));
+        return ResponseEntity.ok(quiz.getLikes());
+    }
+
     //like or dislike option endpoint
     @PostMapping("/{quizId}/like-dislike")
     public ResponseEntity<Integer> likeQuiz(@PathVariable Long quizId, @RequestParam boolean like) {
         Quiz quiz = quizService.getQuizById(quizId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Quiz not found"));
 
+
         if (like) {
             quiz.setLikes(quiz.getLikes() + 1);
+        }else {
+            quiz.setLikes(Math.max(quiz.getLikes() - 1, 0)); // Optional for dislike
         }
 
         quizRepo.save(quiz);
+
         return ResponseEntity.ok(quiz.getLikes());
     }
 }

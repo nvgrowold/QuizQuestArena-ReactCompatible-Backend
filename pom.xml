@@ -9,7 +9,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.example</groupId>
-	<artifactId>QuizQuestArena-Backend</artifactId>
+	<artifactId>QuizQuestArena-ReactCompatible-Backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>QuizQuestArena-Backend</name>
 	<description>Demo project for Spring Boot</description>
