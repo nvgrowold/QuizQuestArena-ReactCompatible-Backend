@@ -13,7 +13,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class QuizDTO {
     private Long id;
-
     //    @NotBlank(message = "Quiz name is required.")
 //    @Size(max = 100, message = "Quiz name must not exceed 100 characters.")
     private String name;
