@@ -56,8 +56,11 @@ A full-featured quiz tournament platform where users can join live tournaments, 
 - Scoreboard + likes viewable
 
 ## 📷 Screenshots
-
-
+![Screenshot 1](./Picture1.gif)
+![Screenshot 2](./Picture2.gif)
+![Screenshot 3](./Picture3.png)
+![Screenshot 4](./Picture4.png)
+![Screenshot 5](./Picture5.gif)
 
 ## 📝 How to Run
 
